@@ -1,0 +1,70 @@
+Opta表記
+Manchester City
+Arsenal
+Liverpool
+Aston Villa
+Tottenham Hotspur;Tottenham
+Chelsea
+Manchester United
+Newcastle United;Newcastle
+Crystal Palace
+Brighton & Hove Albion;Brighton and Hove Albion;Brighton
+AFC Bournemouth;Bournemouth
+Fulham
+Everton
+Brentford
+Nottingham Forest
+Leeds United;Leeds
+Sunderland
+Coventry City;Coventry
+Hull City;Hull
+Ipswich Town;Ipswich
+Barcelona
+Real Madrid
+Atlético de Madrid
+Real Sociedad
+Villarreal
+Real Betis
+Osasuna
+Athletic Club
+Rayo Vallecano
+Sevilla
+Celta de Vigo
+Getafe
+Valencia
+Alavés
+Espanyol
+Levante
+Elche
+Deportivo de A Coruña
+Málaga
+Racing de Santander
+PSV;PSV Eindhoven
+Ajax;AFC Ajax
+Feyenoord
+FC Utrecht;Utrecht
+AZ;AZ Alkmaar
+FC Twente;Twente
+Go Ahead Eagles
+NEC Nijmegen;NEC
+sc Heerenveen;SC Heerenveen;Heerenveen
+PEC Zwolle
+Fortuna Sittard
+Sparta Rotterdam
+FC Groningen;Groningen
+Excelsior
+Telstar
+ADO Den Haag
+SC Cambuur;Cambuur
+Willem II
+
+
+
+
+
+
+
+
+
+
+
