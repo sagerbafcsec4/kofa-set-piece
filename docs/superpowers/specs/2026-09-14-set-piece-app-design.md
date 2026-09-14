@@ -41,7 +41,10 @@ Optaから手動で落とした「セットプレー得点／失点」のExcel2�
 - 辞書: 内蔵表 `BUILTIN_DICT` から `Opta表記(正規化) → 日本語名` の Map を作り、共有シートCSV（`fetch(..., {cache:'no-store'})`・15秒で時間切れ）の選択リーグ行に「Opta表記」があれば上書き。`;`区切り・NFC正規化・小文字化。シートが読めなくても内蔵表で続行（警告表示）。
 - 並び: Set Piece 降順 → Opta Total 降順 → 日本語名昇順。
 
-## 出力（体裁の実測値）
+## 出力（体裁）
+
+> 2026-09-15 ユーザー指定で変更: フォント MS UI Gothic、列幅 A=25・B〜H=13、全セル「縮小して全体を表示」（見出し行は折り返しで2行）、見出し名 Team/Total/Penalties/Corners/Direct Freekicks/Indirect Freekicks/Throw In/Goals From Set Piece ％。以下は初版（テンプレ実測値）の記録。
+
 
 - 列幅 A 21.7, B 7.1, C 9.7, D 10.1, E 11.2, F 12.1, G 9(=9.005), H 11.6／行高 表題19.5・見出し30・本文17.25・空き18・失点表題18.6
 - 表題: A:H結合・Meiryo UI 12 太字・塗り `FFE7E6E6`・四方 medium

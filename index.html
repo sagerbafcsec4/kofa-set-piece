@@ -178,7 +178,8 @@ const OPTA_COLS = {
   total: "total",
   setPiecePct: "goals from set piece %",
 };
-const OUT_HEADERS = ["Team","Total","Penalty","Corners","Dir. Free Kicks","Ind. Free Kicks","Throws","Set Pieces %"];
+// 見出し（2026-09-15 ユーザー指定）。長いものは改行文字で2行にする（見出しセルだけ「折り返し」、他は「縮小して全体を表示」）。％は全角
+const OUT_HEADERS = ["Team","Total","Penalties","Corners","Direct\nFreekicks","Indirect\nFreekicks","Throw In","Goals From\nSet Piece ％"];
 // 内蔵の対応表（Optaの英語名 → 日本語名）。日本語名は共有シートの「チーム名」列と同じ表記。
 // 共有シートに「Opta表記」列があればそちらを優先し、ここは土台として使う（docs/opta-names-draft.csv と同内容）。
 // 英語名は ; 区切りで複数書ける。ラ・リーガは実データで確認済み、プレミア・エールディヴィジは推定（未登録が出たら足す）。
@@ -211,10 +212,10 @@ const BUILTIN_DICT = {
 };
 // 体裁（前回の完成品 K〜R 列を openpyxl で実測した値）
 const STYLE = {
-  font: "Meiryo UI",
+  font: "MS UI Gothic",   // 2026-09-15 ユーザー指定（旧: Meiryo UI）
   titleFill: "FFE7E6E6", headFill: "FF000000", white: "FFFFFFFF", black: "FF000000",
-  // G列は 9.005（ExcelJS は幅がちょうど 9 だと「既定幅」扱いで書き出さないため。見た目は 9 と同じ）
-  colWidths: [21.7, 7.1, 9.7, 10.1, 11.2, 12.1, 9.005, 11.6],
+  // 2026-09-15 ユーザー指定: A=25、B〜H=13（旧: テンプレ実測値。ExcelJS は幅がちょうど 9 だと省略する癖があるので 9 は使わない）
+  colWidths: [25, 13, 13, 13, 13, 13, 13, 13],
   rowH: { title: 19.5, head: 30, body: 17.25, gap: 18, title2: 18.6 },
   bigCols: 4,   // A〜D列は12pt、E〜H列は11pt
 };
@@ -420,7 +421,8 @@ function applyStyle(cell, s){
   // 結合セルの従セルは主セルの style オブジェクトを参照共有しているので、必ず新しいオブジェクトに差し替えてから設定する
   cell.style = {};
   cell.font = { name: STYLE.font, size: s.size, bold: !!s.bold, color: { argb: s.color || STYLE.black } };
-  cell.alignment = { horizontal: "center", vertical: "middle" };
+  // 見出しは折り返し（2行表示）、それ以外は「縮小して全体を表示」。Excel ではこの2つは同時に持てない
+  cell.alignment = s.wrap ? { horizontal: "center", vertical: "middle", wrapText: true } : { horizontal: "center", vertical: "middle", shrinkToFit: true };
   if (s.fill) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: s.fill } };
   if (s.border) cell.border = s.border;
   if (s.numFmt) cell.numFmt = s.numFmt;
@@ -441,7 +443,7 @@ function writeTable(ws, startRow, title, rows, isSecond){
   ws.getRow(r1).height = STYLE.rowH.head;
   for (let c = 1; c <= NCOL; c++) {
     const cell = ws.getCell(r1, c); cell.value = OUT_HEADERS[c - 1];
-    applyStyle(cell, { size: fontSize(c), bold: true, color: STYLE.white, fill: STYLE.headFill,
+    applyStyle(cell, { size: fontSize(c), bold: true, color: STYLE.white, fill: STYLE.headFill, wrap: true,
       border: borderOf("medium", "thin", c === 1 ? "medium" : "thin", c === NCOL ? "medium" : "thin"),
       numFmt: c === NCOL ? "@" : null });
   }
