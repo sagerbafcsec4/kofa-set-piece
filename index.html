@@ -127,7 +127,7 @@
         <div class="field"><label for="matchday">節</label><input id="matchday" type="number" class="dateinput" min="1" max="38" step="1" placeholder="例: 5"><div class="hint">表題「※第N節終了時」・シート名・ファイル名に使います</div></div>
       </div>
       <div class="dict" id="dictStatus"><span class="spin"></span> チーム名辞書を読み込み中…</div>
-      <div class="hint">チーム名の日本語表記は、Excelフォーマット作成アプリと同じ共有スプレッドシートの「チーム名」列を使います（照合には「Opta表記」列）。未登録のクラブは英語のまま出力し、結果欄でお知らせします。</div>
+      <div class="hint">クラブ名は、アプリ内蔵の対応表（Optaの英語名→日本語名）で日本語にします。Excelフォーマット作成アプリと同じ共有スプレッドシートに「Opta表記」列があれば、そちらの登録を優先します。対応表に無いクラブは英語のまま出力し、結果欄でお知らせします。</div>
     </div>
   </div>
 
@@ -179,6 +179,36 @@ const OPTA_COLS = {
   setPiecePct: "goals from set piece %",
 };
 const OUT_HEADERS = ["Team","Total","Penalty","Corners","Dir. Free Kicks","Ind. Free Kicks","Throws","Set Pieces %"];
+// 内蔵の対応表（Optaの英語名 → 日本語名）。日本語名は共有シートの「チーム名」列と同じ表記。
+// 共有シートに「Opta表記」列があればそちらを優先し、ここは土台として使う（docs/opta-names-draft.csv と同内容）。
+// 英語名は ; 区切りで複数書ける。ラ・リーガは実データで確認済み、プレミア・エールディヴィジは推定（未登録が出たら足す）。
+const BUILTIN_DICT = {
+  "プレミアリーグ": [
+    ["マンチェスター・シティ", "Manchester City"], ["アーセナル", "Arsenal"], ["リヴァプール", "Liverpool"],
+    ["アストン・ヴィラ", "Aston Villa"], ["トッテナム・ホットスパー", "Tottenham Hotspur;Tottenham"], ["チェルシー", "Chelsea"],
+    ["マンチェスター・ユナイテッド", "Manchester United"], ["ニューカッスル", "Newcastle United;Newcastle"],
+    ["クリスタル・パレス", "Crystal Palace"], ["ブライトン", "Brighton & Hove Albion;Brighton and Hove Albion;Brighton"],
+    ["ボーンマス", "AFC Bournemouth;Bournemouth"], ["フラム", "Fulham"], ["エヴァートン", "Everton"], ["ブレントフォード", "Brentford"],
+    ["ノッティンガム・フォレスト", "Nottingham Forest"], ["リーズ", "Leeds United;Leeds"], ["サンダーランド", "Sunderland"],
+    ["コヴェントリー", "Coventry City;Coventry"], ["ハル", "Hull City;Hull"], ["イプスウィッチ", "Ipswich Town;Ipswich"],
+  ],
+  "ラ・リーガ": [
+    ["バルセロナ", "Barcelona"], ["レアル・マドリー", "Real Madrid"], ["アトレティコ・デ・マドリー", "Atlético de Madrid"],
+    ["レアル・ソシエダ", "Real Sociedad"], ["ビジャレアル", "Villarreal"], ["ベティス", "Real Betis"], ["オサスナ", "Osasuna"],
+    ["アトレティック・クルブ", "Athletic Club"], ["ラージョ・バジェカーノ", "Rayo Vallecano"], ["セビージャ", "Sevilla"],
+    ["セルタ", "Celta de Vigo"], ["ヘタフェ", "Getafe"], ["バレンシア", "Valencia"], ["アラベス", "Alavés"],
+    ["エスパニョール", "Espanyol"], ["レバンテ", "Levante"], ["エルチェ", "Elche"], ["デポルティーボ", "Deportivo de A Coruña"],
+    ["マラガ", "Málaga"], ["ラシン・サンタンデール", "Racing de Santander"],
+  ],
+  "エールディヴィジ": [
+    ["PSV", "PSV;PSV Eindhoven"], ["アヤックス", "Ajax;AFC Ajax"], ["フェイエノールト", "Feyenoord"], ["ユトレヒト", "FC Utrecht;Utrecht"],
+    ["AZアルクマール", "AZ;AZ Alkmaar"], ["トゥウェンテ", "FC Twente;Twente"], ["ゴー・アヘッド・イーグルス", "Go Ahead Eagles"],
+    ["NECナイメヘン", "NEC Nijmegen;NEC"], ["ヘーレンフェーン", "sc Heerenveen;SC Heerenveen;Heerenveen"], ["PECズヴォレ", "PEC Zwolle"],
+    ["フォルトゥナ・シッタート", "Fortuna Sittard"], ["スパルタ・ロッテルダム", "Sparta Rotterdam"], ["フローニンゲン", "FC Groningen;Groningen"],
+    ["エクセルシオール", "Excelsior"], ["テルスター", "Telstar"], ["ADOデン・ハーグ", "ADO Den Haag"], ["カンブール", "SC Cambuur;Cambuur"],
+    ["ヴィレムⅡ", "Willem II"],
+  ],
+};
 // 体裁（前回の完成品 K〜R 列を openpyxl で実測した値）
 const STYLE = {
   font: "Meiryo UI",
@@ -292,11 +322,11 @@ function parseCSV(text){
   if (field !== "" || row.length) { row.push(field); rows.push(row); }
   return rows.filter(r => r.some(c => (c || "").trim() !== ""));
 }
-const dictState = { ok: false, error: null, header: [], rows: [], loadedAt: null };
+const dictState = { ok: false, loading: true, error: null, header: [], rows: [], loadedAt: null };
 async function loadTeamSheet(){
   const el = $("dictStatus");
   el.className = "dict"; el.innerHTML = '<span class="spin"></span> チーム名辞書を読み込み中…';
-  dictState.ok = false; dictState.error = null;
+  dictState.ok = false; dictState.loading = true; dictState.error = null; updateRun();
   const ac = new AbortController(); const timer = setTimeout(() => ac.abort(), 15000);
   try {
     const res = await fetch(SHEET_CSV, { cache: "no-store", signal: ac.signal });
@@ -308,46 +338,57 @@ async function loadTeamSheet(){
     dictState.ok = true; dictState.loadedAt = new Date();
   } catch (e) {
     dictState.error = (e && e.name === "AbortError") ? "時間切れ（15秒）" : String(e && e.message || e);
-  } finally { clearTimeout(timer); }
+  } finally { clearTimeout(timer); dictState.loading = false; }
   renderDictStatus(); updateRun();
 }
 function findCol(header, ...keys){
   for (let i = 0; i < header.length; i++) { if (keys.some(k => header[i].includes(k))) return i; }
   return -1;
 }
-// 選択リーグの行だけから「Opta表記(小文字) → チーム名」の Map を作る
+// 「Opta表記(小文字) → 日本語名」の Map を作る。
+// 土台は内蔵表 BUILTIN_DICT。共有シート（header/rows）に「Opta表記」列があれば、選択リーグの行でそれを上書きする（シート優先）。
 function buildDictionary(header, rows, league){
+  const out = { map: new Map(), builtin: 0, fromSheet: 0, sheetHasColumn: false, teamsInLeague: 0, duplicates: [] };
+  const put = (raw, name) => {
+    for (const part of String(raw).split(/[;；]/)) {
+      const k = normKey(part); if (!k) continue;
+      if (out.map.has(k) && out.map.get(k) !== name) out.duplicates.push(part.trim() + "（" + out.map.get(k) + " → " + name + "）");
+      out.map.set(k, name);
+    }
+  };
+  for (const [name, raw] of (BUILTIN_DICT[league] || [])) { put(raw, name); out.builtin++; }
+  out.duplicates.length = 0;   // 内蔵表どうしの重複は設計上ないので、ここからはシート由来だけ数える
+  if (!header || !header.length) return out;
   const iName = findCol(header, "チーム名"); const iLeague = findCol(header, "所属リーグ", "リーグ");
   let iOpta = findCol(header, "Opta表記"); if (iOpta < 0) iOpta = header.findIndex(h => /opta/i.test(h));
-  const out = { map: new Map(), missingColumn: iOpta < 0, teamsInLeague: 0, withOpta: 0, duplicates: [] };
   if (iName < 0 || iLeague < 0) return out;
+  out.sheetHasColumn = iOpta >= 0;
   for (const r of rows) {
     const name = (r[iName] || "").trim(); if (!name) continue;
     if ((r[iLeague] || "").trim() !== league) continue;
     out.teamsInLeague++;
     if (iOpta < 0) continue;
     const raw = (r[iOpta] || "").trim(); if (!raw) continue;
-    out.withOpta++;
-    for (const part of raw.split(/[;；]/)) {
-      const k = normKey(part); if (!k) continue;
-      if (out.map.has(k) && out.map.get(k) !== name) out.duplicates.push(part.trim() + "（" + out.map.get(k) + " / " + name + "）");
-      out.map.set(k, name);
-    }
+    out.fromSheet++;
+    // シートの登録を優先: 同じ英語名が内蔵表にあっても上書き（重複としては数えない）
+    for (const part of raw.split(/[;；]/)) { const k = normKey(part); if (k) out.map.delete(k); }
+    put(raw, name);
   }
   return out;
 }
 function renderDictStatus(){
   const el = $("dictStatus");
+  const d = buildDictionary(dictState.ok ? dictState.header : [], dictState.ok ? dictState.rows : [], currentLeague());
+  let msg;
   if (!dictState.ok) {
-    el.className = "dict bad";
-    el.innerHTML = "✘ チーム名辞書を読み込めませんでした（" + esc(dictState.error) + "）。ネット接続を確認してください。 <button class='small' id='dictRetry'>再読込</button>";
-    $("dictRetry").onclick = loadTeamSheet; return;
+    el.className = "dict";
+    msg = `⚠ 共有シートを読み込めませんでした（${esc(dictState.error)}）。内蔵の対応表（${esc(currentLeague())} ${d.builtin}クラブ）で処理します。`;
+  } else {
+    el.className = "dict";
+    msg = `✔ チーム名辞書: ${esc(currentLeague())} 内蔵 ${d.builtin}クラブ`;
+    if (d.sheetHasColumn) msg += `＋共有シートの「Opta表記」${d.fromSheet}クラブ（シート優先）`;
+    else msg += `（共有シートに「Opta表記」列は無し。列を足すとそちらを優先します）`;
   }
-  const d = buildDictionary(dictState.header, dictState.rows, currentLeague());
-  el.className = "dict";
-  let msg = `✔ チーム名辞書: ${esc(currentLeague())} ${d.teamsInLeague}クラブ`;
-  if (d.missingColumn) msg += "（⚠ シートに「Opta表記」列がありません。全クラブが英語のまま出力されます）";
-  else msg += `（Opta表記あり ${d.withOpta}クラブ）`;
   el.innerHTML = msg + " <button class='small' id='dictRetry'>再読込</button>";
   $("dictRetry").onclick = loadTeamSheet;
 }
@@ -454,11 +495,10 @@ function verify({ league, goalsRows, concededRows, goalsSrcSum, concededSrcSum, 
   checks.push({ ok: sumOk, label: "Total の合計が元ファイルと一致", detail: `得点 ${outG}（元 ${goalsSrcSum}）／ 失点 ${outC}（元 ${concededSrcSum}）` });
   if (!sumOk) warnings.push("出来上がった表の合計が元ファイルと一致しません。このファイルは使わず、ページを再読み込みしてやり直してください。");
   const unknown = [...new Set([...unknownG, ...unknownC])];
-  checks.push({ ok: !unknown.length && !dictInfo.missingColumn, label: "クラブ名の日本語化", detail: dictInfo.missingColumn ? "シートに「Opta表記」列がないため全クラブ英語のまま" : (unknown.length ? `未登録 ${unknown.length}件（英語のまま出力）` : "全クラブ日本語化") });
-  if (dictInfo.missingColumn) warnings.push("共有シートに「Opta表記」列がありません。列を追加すると日本語化されます。");
-  else if (unknown.length) warnings.push("辞書に無いクラブ（共有シートの該当クラブの「Opta表記」欄に、次の英語名をそのまま追記してください）: " + unknown.join(" / "));
-  if (dictInfo.duplicates.length) warnings.push("同じOpta表記が複数クラブに登録されています: " + dictInfo.duplicates.join(" / "));
-  if (dictInfo.teamsInLeague === 0) warnings.push(`共有シートに「所属リーグ＝${league}」のクラブがありません。`);
+  checks.push({ ok: !unknown.length, label: "クラブ名の日本語化", detail: unknown.length ? `未登録 ${unknown.length}件（英語のまま出力）` : "全クラブ日本語化" });
+  if (unknown.length) warnings.push("対応表に無いクラブがあり英語のまま出力しました。共有シートの該当クラブの「Opta表記」欄に次の英語名をそのまま書くか、Claudeに内蔵表への追加を頼んでください: " + unknown.join(" / "));
+  if (dictInfo.duplicates.length) warnings.push("同じOpta表記が複数クラブに登録されています（共有シートを確認してください）: " + dictInfo.duplicates.join(" / "));
+  if (dictInfo.sheetSkipped) warnings.push("共有シートを読み込めなかったため、内蔵の対応表だけで処理しました。");
   return { checks, warnings, fatal: !sumOk };
 }
 
@@ -473,7 +513,7 @@ function currentLeague(){ return $("league").value; }
 function seasonValue(){ const s = $("season"); return s.value === CUSTOM_VAL ? ($("seasonCustom").value || "").trim() : s.value; }
 function matchdayValue(){ const n = parseInt($("matchday").value, 10); return (Number.isInteger(n) && n >= 1 && n <= 38) ? n : null; }
 function updateRun(){
-  runBtn.disabled = !(exceljsReady && dictState.ok && files.goals && files.conceded && /^\d{4}\/\d{2}$/.test(seasonValue()) && matchdayValue());
+  runBtn.disabled = !(exceljsReady && !dictState.loading && files.goals && files.conceded && /^\d{4}\/\d{2}$/.test(seasonValue()) && matchdayValue());
 }
 function showFile(kind){
   const f = files[kind]; const cap = kind === "goals" ? "Goals" : "Conceded";
@@ -551,8 +591,9 @@ runBtn.onclick = async () => {
   const league = currentLeague(), season = seasonValue(), matchday = matchdayValue();
   try {
     log(`設定: ${league} / ${season} / 第${matchday}節`);
-    const dictInfo = buildDictionary(dictState.header, dictState.rows, league);
-    log(`辞書: ${league} ${dictInfo.teamsInLeague}クラブ（Opta表記あり ${dictInfo.withOpta}）`);
+    const dictInfo = buildDictionary(dictState.ok ? dictState.header : [], dictState.ok ? dictState.rows : [], league);
+    dictInfo.sheetSkipped = !dictState.ok;
+    log(`辞書: ${league} 内蔵 ${dictInfo.builtin}クラブ／共有シートのOpta表記 ${dictInfo.sheetHasColumn ? dictInfo.fromSheet + "クラブ（優先）" : "列なし"}${dictState.ok ? "" : "（シート読込失敗→内蔵のみ）"}`);
     const wbG = await readOptaWorkbook(files.goals), wbC = await readOptaWorkbook(files.conceded);
     const wsG = findOptaSheet(wbG), wsC = findOptaSheet(wbC);
     log(`得点用: ${files.goals.name}（シート「${wsG.name}」）／ 失点用: ${files.conceded.name}（シート「${wsC.name}」）`);
@@ -588,7 +629,7 @@ runBtn.onclick = async () => {
 };
 
 // テストから直接叩けるように純関数を公開
-window.KSP = { parseCSV, parseOptaRows, buildDictionary, localizeAndSort, buildWorkbook, verify, makeFileName, normKey, LEAGUE_OPTIONS, STYLE, OUT_HEADERS };
+window.KSP = { parseCSV, parseOptaRows, buildDictionary, localizeAndSort, buildWorkbook, verify, makeFileName, normKey, LEAGUE_OPTIONS, STYLE, OUT_HEADERS, BUILTIN_DICT };
 </script>
 </body>
 </html>

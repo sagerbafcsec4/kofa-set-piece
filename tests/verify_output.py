@@ -73,11 +73,26 @@ def read_opta(path):
     return rows, src_sum
 
 
+BUILTIN_CSV = os.path.join(paths.REPO, "docs", "opta-names-draft.csv")
+
+
 def load_dict(league, dict_csv=None):
+    """内蔵表（docs/opta-names-draft.csv＝index.html の BUILTIN_DICT と同内容）を土台に、
+    共有シートに「Opta表記」列があればそれで上書きする（アプリと同じ優先順）。"""
+    base, _ = _load_dict_from_text(open(BUILTIN_CSV, encoding="utf-8-sig").read(), league)
     if dict_csv:
         text = open(dict_csv, encoding="utf-8-sig").read()
     else:
-        text = urllib.request.urlopen(paths.SHEET_CSV, timeout=30).read().decode("utf-8-sig")
+        try:
+            text = urllib.request.urlopen(paths.SHEET_CSV, timeout=30).read().decode("utf-8-sig")
+        except Exception:
+            return base, False
+    sheet, has_col = _load_dict_from_text(text, league)
+    base.update(sheet)
+    return base, has_col
+
+
+def _load_dict_from_text(text, league):
     rows = [r for r in csv.reader(io.StringIO(text)) if any(c.strip() for c in r)]
     header = [h.strip() for h in rows[0]]
 
@@ -234,7 +249,7 @@ def verify(out_path, dict_csv=None, league=paths.LEAGUE, matchday=paths.MATCHDAY
     goals, goals_sum = read_opta(goals_path)
     conceded, conceded_sum = read_opta(conceded_path)
     dic, has_col = load_dict(league, dict_csv)
-    rep.check(True, "辞書", f"{league} Opta表記あり {len(dic)}件" + ("" if has_col else "（Opta表記列なし→英語名のまま期待）"))
+    rep.check(True, "辞書", f"{league} 対応 {len(dic)}件（内蔵表" + ("＋共有シートのOpta表記列）" if has_col else "のみ・シートに列なし）"))
     eg, ec = expected_rows(goals, dic), expected_rows(conceded, dic)
     # 列幅
     bad = [f"{chr(64 + i + 1)}={ws.column_dimensions[chr(64 + i + 1)].width}" for i, w in enumerate(COL_WIDTHS)

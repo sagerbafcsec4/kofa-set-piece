@@ -44,24 +44,30 @@ UNIT_JS = r"""
     ["ブライトン","プレミアリーグ","","Brighton & Hove Albion;Brighton"],
     ["ベティス","ラ・リーガ","","Real Betis"],
   ];
+  const d0 = KSP.buildDictionary([], [], "ラ・リーガ");
+  t("内蔵表だけで日本語化できる", d0.builtin === 20 && d0.map.get(KSP.normKey("Real Madrid")) === "レアル・マドリー" && d0.map.get(KSP.normKey("Sevilla")) === "セビージャ", JSON.stringify([d0.builtin, d0.map.get(KSP.normKey("Sevilla"))]));
+  t("内蔵表 3リーグ", KSP.BUILTIN_DICT["プレミアリーグ"].length === 20 && KSP.BUILTIN_DICT["エールディヴィジ"].length === 18, "");
+  const header2 = ["チーム名","所属リーグ","Opta表記"];
+  const dOv = KSP.buildDictionary(header2, [["レアル・マドリード","ラ・リーガ","Real Madrid"]], "ラ・リーガ");
+  t("シートの登録が内蔵表より優先", dOv.map.get(KSP.normKey("Real Madrid")) === "レアル・マドリード" && dOv.duplicates.length === 0 && dOv.fromSheet === 1, JSON.stringify([dOv.map.get(KSP.normKey("Real Madrid")), dOv.duplicates]));
   const d = KSP.buildDictionary(header, data, "ラ・リーガ");
-  t("辞書 リーグ絞り込み", d.teamsInLeague === 3 && d.withOpta === 3, JSON.stringify([d.teamsInLeague, d.withOpta]));
-  t("辞書 Opta表記列あり", d.missingColumn === false, d.missingColumn);
+  t("辞書 リーグ絞り込み", d.teamsInLeague === 3 && d.fromSheet === 3, JSON.stringify([d.teamsInLeague, d.fromSheet]));
+  t("辞書 Opta表記列あり", d.sheetHasColumn === true, d.sheetHasColumn);
   t("辞書 NFC 正規化", d.map.get(KSP.normKey("Atlético de Madrid")) === "アトレティコ・デ・マドリー", d.map.get(KSP.normKey("Atlético de Madrid")));
-  t("辞書 他リーグは入らない", !d.map.has(KSP.normKey("Brighton")), d.map.has(KSP.normKey("Brighton")));
+  t("辞書 他リーグの行は入らない（内蔵表にも無い英語名で確認）", !d.map.has(KSP.normKey("Brighton")), d.map.has(KSP.normKey("Brighton")));
   const dNo = KSP.buildDictionary(["チーム名","所属リーグ"], [["x","ラ・リーガ"]], "ラ・リーガ");
-  t("辞書 Opta表記列なしを検知", dNo.missingColumn === true && dNo.map.size === 0, dNo.missingColumn);
+  t("辞書 列なしでも内蔵表で動く", dNo.sheetHasColumn === false && dNo.map.size > 0, JSON.stringify([dNo.sheetHasColumn, dNo.map.size]));
   // localizeAndSort: 日本語化・未登録・並び（SP降順→Total降順→名前昇順）
   const rowsIn = [
-    {team:"Sevilla", setPiece:4, total:9, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.5},
+    {team:"Unknown FC", setPiece:4, total:9, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.5},
     {team:"REAL MADRID", setPiece:3, total:14, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.2},
     {team:"Real Betis", setPiece:3, total:14, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.2},
     {team:"Atlético de Madrid", setPiece:3, total:20, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.1},
   ];
   const ls = KSP.localizeAndSort(rowsIn, d.map);
   t("日本語化 大小無視", ls.rows.some(r => r.name === "レアル・マドリー"), ls.rows.map(r=>r.name).join("|"));
-  t("未登録は英語のまま＋一覧", ls.unknown.length === 1 && ls.unknown[0] === "Sevilla" && ls.rows[0].name === "Sevilla", JSON.stringify(ls.unknown));
-  t("並び SP降順→Total降順→名前昇順", ls.rows.map(r=>r.name).join("|") === "Sevilla|アトレティコ・デ・マドリー|ベティス|レアル・マドリー", ls.rows.map(r=>r.name).join("|"));
+  t("未登録は英語のまま＋一覧", ls.unknown.length === 1 && ls.unknown[0] === "Unknown FC" && ls.rows[0].name === "Unknown FC", JSON.stringify(ls.unknown));
+  t("並び SP降順→Total降順→名前昇順", ls.rows.map(r=>r.name).join("|") === "Unknown FC|アトレティコ・デ・マドリー|ベティス|レアル・マドリー", ls.rows.map(r=>r.name).join("|"));
   // makeFileName
   t("ファイル名", KSP.makeFileName("ラ・リーガ","2026/27",5) === "ラ・リーガ_セットプレー情報_2026-27_第5節.xlsx", KSP.makeFileName("ラ・リーガ","2026/27",5));
   return out;
@@ -72,6 +78,14 @@ UNIT_JS = r"""
 def run_unit_tests(page):
     page.wait_for_function("typeof window.KSP === 'object'", timeout=20000)
     results = page.evaluate(UNIT_JS)
+    # 内蔵表（index.html）と docs/opta-names-draft.csv が同内容か
+    import csv
+    builtin = page.evaluate("KSP.BUILTIN_DICT")
+    flat_builtin = sorted((lg, n, o) for lg, pairs in builtin.items() for n, o in pairs)
+    with open(verify_output.BUILTIN_CSV, encoding="utf-8-sig") as f:
+        flat_csv = sorted((r["所属リーグ"], r["チーム名"], r["Opta表記"]) for r in csv.DictReader(f))
+    results.append({"name": "内蔵表と docs/opta-names-draft.csv が同内容", "ok": flat_builtin == flat_csv,
+                    "detail": f"内蔵 {len(flat_builtin)} / CSV {len(flat_csv)}"})
     ok = True
     for r in results:
         print(("✔ " if r["ok"] else "✘ ") + "[部品] " + r["name"] + ("" if r["ok"] else "  — " + r["detail"]))
