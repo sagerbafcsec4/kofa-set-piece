@@ -4,6 +4,7 @@ Optaの「What Scored - Goals」「What Conceded - Goals」の2つのExcelを落
 日本語クラブ名・決まった体裁の「セットプレー情報」Excelを作るWebアプリ。
 
 公開URL（本体・Cloudflare Pages・鍵つき）: https://kofa-set-piece.pages.dev/
+（鍵＝Cloudflare Access。Zero Trust → Access → Applications に Self-hosted「kofa-set-piece.pages.dev」を作り、ポリシー「会社ドメイン許可」を付けた。2026-09-15設定済み。Pages側の設定画面に「Access Policy」ボタンは無かったので、Zero Trust 側で直接作る）
 
 処理はすべて利用者のブラウザ内で完結し、Optaのファイルは外部送信されない。
 ネットから読みに行くのは「チーム名辞書」（Googleスプレッドシートの公開CSV）と、Excelを作る部品（ExcelJS）だけ。
