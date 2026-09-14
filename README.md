@@ -22,6 +22,9 @@ Optaの「What Scored - Goals」「What Conceded - Goals」の2つのExcelを落
    `本番へ送る.bat` をダブルクリック（＝ `python deploy.py`。未記録の変更がないか確かめ → GitHubへ送信 → `index.html` だけを一時フォルダに置いて
    `npx wrangler pages deploy <一時フォルダ> --project-name=kofa-set-piece --branch=main` → 公開URLから取り直して中身を照合）。
    初回のみ `npx wrangler login` でのログインが必要。古い表示が出たら Ctrl+F5。
+   ⑥の照合が「証明書」のエラーで失敗することがある（2026-09-14 初回公開時に発生。送信自体は成功していた）。
+   その場合はブラウザで公開URLを開き、画面が最新か（Ctrl+F5）を目で確認すればよい。
+   **注意**: `wrangler pages project create` は新方式（Workers統合）に流れるため、枠を作り直すときだけ `--force` を付ける（初回に誤って新方式で作ってしまい撤去した経緯あり）。
 
 別のPC・別のClaude/Coworkで作業するときも、**まずこの README と `index.html` を読めば全体を把握できます。**
 
