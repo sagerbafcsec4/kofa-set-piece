@@ -1,0 +1,10 @@
+# 作業中に自動でできる一時フォルダ・生成物（記録しない）
+.wrangler/
+node_modules/
+__pycache__/
+*.pyc
+tests/output/
+test-results/
+_deploy/
+# Optaの実データ・出来上がりのExcelは保管庫に入れない
+*.xlsx

@@ -1,0 +1,88 @@
+# セットプレーExcel作成（kofa-set-piece）
+
+Optaの「What Scored - Goals」「What Conceded - Goals」の2つのExcelを落とすだけで、
+日本語クラブ名・決まった体裁の「セットプレー情報」Excelを作るWebアプリ。
+
+公開URL（本体・Cloudflare Pages・鍵つき）: https://kofa-set-piece.pages.dev/
+
+処理はすべて利用者のブラウザ内で完結し、Optaのファイルは外部送信されない。
+ネットから読みに行くのは「チーム名辞書」（Googleスプレッドシートの公開CSV）と、Excelを作る部品（ExcelJS）だけ。
+
+---
+
+## ⚠ 修正する人へ（最重要）
+
+**画面もロジックも `index.html` 1枚に全部入っています（唯一の正本）。**
+
+修正手順:
+1. `index.html` を編集する
+2. `python tests\e2e_run.py` で一気通貫テスト（部品テスト → ブラウザでアップ・実行・ダウンロード → 出力の機械照合）が `RESULT: PASS` になることを確認する
+3. このリポジトリにコミット・プッシュ（GitHubが正本）
+4. **Cloudflare Pagesは自動反映されない**（GitHub連携ではなく手動配置のため。他のkofaアプリと同じ方式）。反映するには
+   `本番へ送る.bat` をダブルクリック（＝ `python deploy.py`。未記録の変更がないか確かめ → GitHubへ送信 → `index.html` だけを一時フォルダに置いて
+   `npx wrangler pages deploy <一時フォルダ> --project-name=kofa-set-piece --branch=main` → 公開URLから取り直して中身を照合）。
+   初回のみ `npx wrangler login` でのログインが必要。古い表示が出たら Ctrl+F5。
+
+別のPC・別のClaude/Coworkで作業するときも、**まずこの README と `index.html` を読めば全体を把握できます。**
+
+---
+
+## 絶対ルール（データ保護）
+
+- Optaの数値は**書き換えない**。やるのは「並べ替え」「クラブ名を日本語に置換」「割合を÷100してExcelの％書式にする」だけ。
+- 出力前に**出来上がった表の Total 列を足し直し、元ファイルの `Goals From Set Piece` の合計と自動照合**する。一致しなければファイルを出さない。
+- 元ファイルは変更せず、別ファイル（`{リーグ}_セットプレー情報_{シーズン}_第{節}節.xlsx`）をダウンロードする方式。
+- 実データ（`*.xlsx`）はこのリポジトリに入れない（`.gitignore` 済み）。
+
+## 入力ファイルの前提
+
+- Optaから落とした `.xlsx`。シート名は `Sheet`（無ければ先頭シート）。1行目が見出し。
+- 必要な列（**名前で探す**ので順番は問わない。大文字小文字・空白のゆれは吸収）:
+  `Team Name` / `Goals From Set Piece` / `Goals From Penalties` / `Goals From Corner` / `Goals From Direct Freekicks` / `Goals from Indirect Freekicks` / `Goals From Throw In` / `Total` / `Goals From Set Piece %`
+- 得点用・失点用の2枠。まとめてどちらかに落とすと、ファイル名に `Conceded` を含む方を失点用に自動で振り分ける。
+- 列が足りない・数値でない・Excelのエラー値がある場合は、理由を表示して中止する。
+
+## チーム名辞書（Googleスプレッドシート）
+
+- Excelフォーマット作成アプリと**同じ共有スプレッドシート**（公開CSV）を読む。URLは `index.html` の `SHEET_CSV`。
+- 使う列: `チーム名`（出力に使う日本語表記）／`所属リーグ`（プレミアリーグ・ラ・リーガ・エールディヴィジ）／**`Opta表記`**（Optaの英語名。**この列は管理者がシートに追加する**）
+  - `Opta表記` は `;` 区切りで複数書ける（例: `Brighton & Hove Albion;Brighton`）。大文字小文字・前後の空白は無視。
+  - 下書きは `docs/opta-names-draft.csv`（ラ・リーガ20クラブは確定表記。プレミア・エールディヴィジは**推定**なので、アプリの結果欄に「未登録」と出た英語名をそのままシートの `Opta表記` に追記して直す）。
+- 列が無い／未登録のクラブは**英語のまま出力し、結果欄で警告**する（実行は止めない）。
+- シートそのものが読めないとき（ネット断など）は実行ボタンが押せない（内蔵辞書は持たない）。
+- リーグを増やすときは `index.html` の `LEAGUE_OPTIONS` に1行足し、シートの `所属リーグ` に同じ文言で行を追加する。
+
+## 出力の仕様
+
+| 項目 | 内容 |
+|---|---|
+| ファイル名 | `{リーグ}_セットプレー情報_{シーズン(/→-)}_第{節}節.xlsx`（例 `ラ・リーガ_セットプレー情報_2026-27_第5節.xlsx`） |
+| シート名 | `{節}節用セットプレー` |
+| 配置 | 得点表: 1行目 表題（A:H結合）／2行目 見出し／3行目〜 本文。1行空けて失点表（20クラブなら 24〜45行目） |
+| 見出し | Team / Total / Penalty / Corners / Dir. Free Kicks / Ind. Free Kicks / Throws / Set Pieces % |
+| 列の対応 | Total←Goals From Set Piece、Penalty←…Penalties、Corners←…Corner、Dir.←…Direct Freekicks、Ind.←…Indirect Freekicks、Throws←…Throw In、%←…Set Piece %÷100 |
+| 並び | セットプレー得点（失点）の降順 → Optaの Total 降順 → 日本語名の昇順 |
+| 体裁 | 全セル Meiryo UI・中央揃え。表題: 薄灰 `E7E6E6`・黒太字12pt・四方太線。見出し: 黒背景・白太字（A〜D 12pt／E〜H 11pt）。本文: 外周太線・内側細線。%列は `0.00%`。列幅 21.7/7.1/9.7/10.1/11.2/12.1/9/11.6 |
+
+## 結果欄の照合（毎回表示）
+
+- クラブ数（リーグの期待値と比較）／得点と失点でクラブの顔ぶれが同じか／Total の合計が元ファイルと一致／クラブ名の日本語化（未登録一覧）
+
+## ファイル一覧
+
+| ファイル | 役割 |
+|---|---|
+| `index.html` | アプリ本体（画面＋ロジック。**唯一の正本**） |
+| `deploy.py` / `本番へ送る.bat` | 本番（Cloudflare Pages）へ送る台本 |
+| `tests/e2e_run.py` | 一気通貫テスト（Playwright）。`python tests\e2e_run.py`。`--headed` でブラウザを表示 |
+| `tests/verify_output.py` | 出力xlsxの機械照合（openpyxl）。単独でも実行可 |
+| `tests/paths.py` | テスト用の実データの住所（日本語パスをここに集約） |
+| `docs/opta-names-draft.csv` | 共有シートに貼る「Opta表記」の下書き |
+| `docs/superpowers/specs/` | 設計書 |
+
+## 仕組み・技術メモ
+
+- 素のHTML＋JavaScript。Excelの読み書きは [ExcelJS](https://github.com/exceljs/exceljs) **4.4.0**（cdnjs・バージョン固定）。Python/Pyodideは使わない（起動待ちなし）。
+- ExcelJS の癖: 結合セルは `mergeCellsWithoutStyle` で結合し8セル個別に体裁を入れる／`alignment.vertical` は `'middle'`／列幅がちょうど 9 だと既定扱いで書き出されないため G列は 9.005／%は `Math.round(v*100)/10000` で丸める。
+- openpyxl（検査側）の癖: 結合範囲の2番目以降は文字・塗りを持たない `MergedCell` として読まれ、外周罫線だけが合成される。検査台本はその見え方で照合している。
+- 主な関数: `parseOptaRows`（列名解決）→ `buildDictionary`（辞書）→ `localizeAndSort` → `buildWorkbook`/`writeTable`（体裁）→ `verify`（照合）→ `download`。純関数は `window.KSP` に公開しておりテストから直接叩ける。

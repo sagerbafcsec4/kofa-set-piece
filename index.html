@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#6d28d9">
+<link rel="icon" href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236d28d9'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='28' height='28' rx='7' fill='url(%23g)'/%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round' opacity='0.95'%3E%3Cpath d='M9 24 Q16 12 25 8'/%3E%3Cline x1='9' y1='24' x2='9' y2='11'/%3E%3Cpath d='M9 11 L15 13 L9 15 Z' fill='%23ffffff'/%3E%3Ccircle cx='23' cy='22' r='2.6'/%3E%3C/g%3E%3C/svg%3E">
+<title>セットプレーExcel作成</title>
+<style>
+  :root{
+    --bg:#f5f4fb; --ink:#0f172a; --muted:#64748b; --line:#e4e9ee; --card:#fff;
+    --p1:#6d28d9; --p2:#8b5cf6; --grad:linear-gradient(135deg,#6d28d9 0%,#8b5cf6 100%);
+    --ring:rgba(109,40,217,.16); --dash:#cdbef2; --soft:#f1ecfb; --ok:#16a34a; --warn:#c2410c;
+    --font:Inter,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,system-ui,sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+  body{ background:var(--bg); color:var(--ink); font-family:var(--font); line-height:1.6; }
+  .topbar{ height:4px; background:var(--grad); }
+  .wrap{ max-width:1040px; margin:0 auto; padding:22px 18px 40px; }
+  header{ display:flex; align-items:center; gap:14px; margin:8px 2px 22px; }
+  .logo{ width:46px; height:46px; flex:0 0 auto; border-radius:12px; overflow:hidden; box-shadow:0 4px 14px -4px var(--ring); }
+  .logo svg{ width:100%; height:100%; display:block; }
+  header h1{ margin:0; font-size:22px; font-weight:800; letter-spacing:.01em; }
+  header .sub{ margin:2px 0 0; font-size:.86rem; color:var(--muted); }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:rgba(15,23,42,.08) 0 2px 12px -6px; }
+  h2{ font-size:1.0rem; margin:0 0 14px; display:flex; align-items:center; gap:10px; }
+  .num{ width:26px; height:26px; flex:0 0 auto; border-radius:50%; background:var(--grad); color:#fff; font-size:.82rem; font-weight:700; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 2px 8px -2px var(--ring); }
+  .drops{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:640px){ .drops{ grid-template-columns:1fr; } }
+  .dropwrap .lbl{ font-weight:700; font-size:.92rem; margin:0 0 6px; }
+  .drop{ border:2px dashed var(--dash); border-radius:14px; padding:26px 14px; text-align:center; color:var(--muted); cursor:pointer; transition:.15s; background:#fff; font-size:.92rem; }
+  .drop:hover,.drop.hover{ border-color:var(--p2); background:var(--soft); color:var(--p1); }
+  .drop strong{ color:var(--ink); }
+  .drop.has{ border-style:solid; border-color:var(--p2); background:var(--soft); }
+  .fileline{ display:none; padding:8px 12px; background:var(--soft); border:1px solid var(--line); border-radius:9px; margin-top:8px; font-size:.9rem; justify-content:space-between; align-items:center; gap:10px; }
+  .fileline.show{ display:flex; }
+  .fileline .meta{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:.82rem; white-space:nowrap; }
+  .rm{ border:0; background:#e7dffb; color:var(--p1); width:22px; height:22px; border-radius:50%; font-size:14px; line-height:1; cursor:pointer; padding:0; }
+  .rm:hover{ background:#d9ccf7; }
+  button{ font:inherit; border:0; border-radius:9px; padding:11px 22px; cursor:pointer; }
+  button.primary{ background:var(--grad); color:#fff; font-weight:700; box-shadow:0 6px 16px -6px var(--ring); }
+  button.primary:disabled{ background:#c7c2d6; box-shadow:none; cursor:not-allowed; }
+  button.small{ background:#fff; color:var(--p1); border:1px solid var(--dash); padding:5px 12px; font-size:.82rem; font-weight:600; border-radius:8px; }
+  button.small:hover{ background:var(--soft); }
+  #status{ font-size:.88rem; color:var(--muted); margin-top:10px; }
+  .alert{ display:none; border-radius:10px; padding:12px 14px; margin:0 0 12px; font-size:.9rem; line-height:1.75; }
+  .alert.danger{ display:block; background:#fdecec; border:1px solid #f3b4b4; color:#9b1c1c; }
+  .alert b{ color:#7f1414; }
+  .setblock{ border:1px solid var(--line); border-radius:14px; padding:16px 18px 18px; margin-bottom:14px; background:#fcfbff; }
+  .setblock:last-child{ margin-bottom:0; }
+  .setblock-title{ display:flex; align-items:center; gap:9px; font-weight:800; font-size:.92rem; color:var(--p1); margin:0 0 14px; padding-bottom:10px; border-bottom:1px solid var(--line); }
+  .setblock-title .dot{ width:9px; height:9px; border-radius:50%; background:var(--grad); flex:0 0 auto; }
+  .grid3{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+  @media (max-width:640px){ .grid3{ grid-template-columns:1fr; } }
+  .field label{ display:block; font-weight:700; font-size:.88rem; margin:0 0 5px; }
+  .hint{ font-size:.8rem; color:var(--muted); margin:4px 0 0; }
+  .dateinput{ font:inherit; font-size:14px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); accent-color:var(--p1); width:100%; }
+  .dateinput:disabled{ background:#f3f3f7; color:#a7adba; cursor:not-allowed; }
+  .dict{ margin-top:14px; padding:10px 12px; border-radius:10px; font-size:.86rem; background:var(--soft); border:1px solid var(--line); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .dict.bad{ background:#fdecec; border-color:#f3b4b4; color:#9b1c1c; }
+  .summary{ font-size:.98rem; font-weight:700; margin:2px 0 10px; }
+  .summary.ok{ color:var(--ok); } .summary.warn{ color:var(--warn); }
+  .warns{ margin:0 0 12px; padding:10px 14px; background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; font-size:.88rem; color:#9a3412; display:none; }
+  .warns.show{ display:block; }
+  .warns ul{ margin:4px 0 0; padding-left:18px; }
+  .zipbtn{ display:inline-flex; align-items:center; gap:8px; text-decoration:none; background:var(--grad); color:#fff; font-weight:700; font-size:.98rem; padding:13px 22px; border-radius:10px; box-shadow:0 8px 18px -6px var(--ring); margin:4px 0 14px; }
+  .zipbtn:hover{ filter:brightness(1.06); }
+  table.checks{ border-collapse:collapse; width:100%; font-size:.86rem; margin:0 0 10px; }
+  table.checks td{ padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  table.checks td:first-child{ width:32px; text-align:center; }
+  table.checks td:nth-child(2){ width:34%; font-weight:600; }
+  .ok-mark{ color:var(--ok); font-weight:700; } .ng-mark{ color:var(--warn); font-weight:700; }
+  details.detail{ margin-top:6px; }
+  details.detail summary{ cursor:pointer; color:var(--muted); font-size:.84rem; list-style:none; }
+  details.detail summary::-webkit-details-marker{ display:none; }
+  details.detail summary::before{ content:"▸ "; }
+  details.detail[open] summary::before{ content:"▾ "; }
+  #log{ background:#faf9fe; color:#3a3550; border:1px solid var(--line); font-family:Consolas,monospace; font-size:.78rem; border-radius:8px; padding:10px; max-height:260px; overflow:auto; white-space:pre-wrap; margin-top:8px; }
+  .spin{ display:inline-block; width:14px; height:14px; border:2px solid #d8d2e8; border-top-color:var(--p1); border-radius:50%; animation:s .8s linear infinite; vertical-align:-2px; }
+  @keyframes s{ to{ transform:rotate(360deg); } }
+  .safe{ font-size:.82rem; color:var(--muted); margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); }
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<div class="wrap">
+  <header>
+    <div class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d28d9"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+<rect x="2" y="2" width="28" height="28" rx="7" fill="url(#g)"/>
+<g fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="0.95">
+<path d="M9 24 Q16 12 25 8"/><line x1="9" y1="24" x2="9" y2="11"/><path d="M9 11 L15 13 L9 15 Z" fill="#ffffff"/><circle cx="23" cy="22" r="2.6"/>
+</g></svg></div>
+    <div>
+      <h1>セットプレーExcel作成</h1>
+      <p class="sub">Optaの「What Scored / What Conceded」から、日本語のセットプレー得点・失点表を作ります</p>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2><span class="num">1</span>Optaのファイルを読み込む（.xlsx）</h2>
+    <div class="drops">
+      <div class="dropwrap">
+        <div class="lbl">得点用（What Scored - Goals／#5Goals など）</div>
+        <div class="drop" id="dropGoals" data-kind="goals">ここに <strong>.xlsx</strong> をドラッグ＆ドロップ、またはクリックして選択
+          <input id="fileGoals" type="file" accept=".xlsx" multiple hidden></div>
+        <div class="fileline" id="lineGoals"><span id="nameGoals"></span><span class="meta"><span id="kbGoals"></span><button class="rm" id="rmGoals" title="このファイルを外す">×</button></span></div>
+      </div>
+      <div class="dropwrap">
+        <div class="lbl">失点用（What Conceded - Goals／#5Conceded など）</div>
+        <div class="drop" id="dropConceded" data-kind="conceded">ここに <strong>.xlsx</strong> をドラッグ＆ドロップ、またはクリックして選択
+          <input id="fileConceded" type="file" accept=".xlsx" multiple hidden></div>
+        <div class="fileline" id="lineConceded"><span id="nameConceded"></span><span class="meta"><span id="kbConceded"></span><button class="rm" id="rmConceded" title="このファイルを外す">×</button></span></div>
+      </div>
+    </div>
+    <div class="hint">2つまとめてどちらかの枠に落としても、ファイル名に「Conceded」を含む方を失点用として自動で振り分けます。</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span>設定</h2>
+    <div class="setblock">
+      <div class="setblock-title"><span class="dot"></span>リーグ・シーズン・節</div>
+      <div class="grid3">
+        <div class="field"><label for="league">リーグ</label><select id="league" class="dateinput"></select></div>
+        <div class="field"><label for="season">シーズン</label><select id="season" class="dateinput"></select><input id="seasonCustom" type="text" class="dateinput" placeholder="例: 2028/29" style="display:none;margin-top:6px"></div>
+        <div class="field"><label for="matchday">節</label><input id="matchday" type="number" class="dateinput" min="1" max="38" step="1" placeholder="例: 5"><div class="hint">表題「※第N節終了時」・シート名・ファイル名に使います</div></div>
+      </div>
+      <div class="dict" id="dictStatus"><span class="spin"></span> チーム名辞書を読み込み中…</div>
+      <div class="hint">チーム名の日本語表記は、Excelフォーマット作成アプリと同じ共有スプレッドシートの「チーム名」列を使います（照合には「Opta表記」列）。未登録のクラブは英語のまま出力し、結果欄でお知らせします。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span>実行</h2>
+    <button id="run" class="primary" disabled>▶ セットプレーExcelを作る</button>
+    <div id="status"><span class="spin"></span> 部品を準備中…</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span>結果（ダウンロード）</h2>
+    <div id="alert" class="alert"></div>
+    <div id="summary" class="summary"></div>
+    <div id="warnings" class="warns"></div>
+    <div id="dl"></div>
+    <div id="checks"></div>
+    <details class="detail" id="detail"><summary>処理の詳細を表示</summary><div id="log"></div></details>
+    <div class="safe">やるのは、Optaの数値を並べ替えて日本語のクラブ名に置き換え、割合を「％」の形にすることだけです。<b>数値そのものは変えません</b>（出来上がったExcelの合計を元ファイルと自動照合します）。処理はすべてブラウザ内で完結し、<b>Optaのファイルは外部送信されません</b>。読みに行くのはチーム名辞書（Googleスプレッドシートの公開CSV）だけです。</div>
+  </div>
+</div>
+
+<!-- ExcelJS 4.4.0 固定（cdnjs）。読み込み失敗は下の status に出す -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js" onerror="window.__exceljsFailed=true"></script>
+<script>
+"use strict";
+// ====================================================================
+// 定数
+// ====================================================================
+const EXCELJS_VERSION = "4.4.0";
+// チーム名辞書（Excelフォーマット作成アプリと同じ共有スプレッドシート・公開CSV）
+const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRfxZY4XyfVh5oL7Fk8nTF1wdhDdzcscTlL1ZTVpu2P2hJ_kg-abbu4HFziWrgkRRuTL-Q_TLxzFrlc/pub?gid=0&single=true&output=csv";
+// リーグを増やすときはここに1行足す（label は共有シートの「所属リーグ」列の値と完全一致させる）
+const LEAGUE_OPTIONS = [
+  { label: "プレミアリーグ",   teams: 20 },
+  { label: "ラ・リーガ",       teams: 20 },
+  { label: "エールディヴィジ", teams: 18 },
+];
+const CUSTOM_VAL = "__custom__";
+// 出力キー → Optaのヘッダ（小文字化・空白圧縮して照合する）
+const OPTA_COLS = {
+  team: "team name",
+  corner: "goals from corner",
+  direct: "goals from direct freekicks",
+  indirect: "goals from indirect freekicks",
+  penalty: "goals from penalties",
+  throwIn: "goals from throw in",
+  setPiece: "goals from set piece",
+  total: "total",
+  setPiecePct: "goals from set piece %",
+};
+const OUT_HEADERS = ["Team","Total","Penalty","Corners","Dir. Free Kicks","Ind. Free Kicks","Throws","Set Pieces %"];
+// 体裁（前回の完成品 K〜R 列を openpyxl で実測した値）
+const STYLE = {
+  font: "Meiryo UI",
+  titleFill: "FFE7E6E6", headFill: "FF000000", white: "FFFFFFFF", black: "FF000000",
+  // G列は 9.005（ExcelJS は幅がちょうど 9 だと「既定幅」扱いで書き出さないため。見た目は 9 と同じ）
+  colWidths: [21.7, 7.1, 9.7, 10.1, 11.2, 12.1, 9.005, 11.6],
+  rowH: { title: 19.5, head: 30, body: 17.25, gap: 18, title2: 18.6 },
+  bigCols: 4,   // A〜D列は12pt、E〜H列は11pt
+};
+const NCOL = 8;
+
+class AppError extends Error {}
+
+// ====================================================================
+// 小道具
+// ====================================================================
+const $ = id => document.getElementById(id);
+const logEl = $("log");
+function log(s){ logEl.textContent += (logEl.textContent ? "\n" : "") + s; }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+const normHeader = h => String(h==null?"":h).toLowerCase().replace(/\s+/g," ").trim();
+const normKey = s => String(s==null?"":s).normalize("NFC").replace(/\s+/g," ").trim().toLowerCase();
+
+// ExcelJS の cell.value は 数値／文字列／{richText}／{formula,result}／{text,hyperlink}／{error} などに化けるので正規化する
+function cellRaw(cell){
+  const v = cell ? cell.value : null;
+  if (v == null) return null;
+  if (typeof v === "object") {
+    if (v.error) throw new AppError("元ファイルにExcelのエラー値があります: " + cell.address + " = " + v.error);
+    if (Array.isArray(v.richText)) return v.richText.map(t => t.text).join("");
+    if ("result" in v) return v.result;
+    if ("text" in v) return v.text;
+    if (v instanceof Date) return v.toISOString();
+  }
+  return v;
+}
+function cellText(cell){ const v = cellRaw(cell); return v == null ? "" : String(v).trim(); }
+function cellNumber(cell){
+  const v = cellRaw(cell);
+  if (v == null || v === "") return NaN;
+  const n = typeof v === "number" ? v : Number(String(v).replace(/[%,\s]/g, ""));
+  return n;
+}
+
+// ====================================================================
+// Opta ファイルの読み取り
+// ====================================================================
+async function readOptaWorkbook(file){
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(await file.arrayBuffer());
+  return wb;
+}
+function findOptaSheet(wb){
+  return wb.getWorksheet("Sheet") || wb.worksheets[0];
+}
+// ヘッダ行から列位置を名前で解決し、行ごとのオブジェクト配列にする
+function parseOptaRows(ws){
+  if (!ws) throw new AppError("シートが見つかりません");
+  const colMap = {};
+  ws.getRow(1).eachCell({ includeEmpty: false }, (c, col) => { const k = normHeader(cellText(c)); if (k && !(k in colMap)) colMap[k] = col; });
+  const idx = {};
+  const missing = [];
+  for (const [key, header] of Object.entries(OPTA_COLS)) {
+    if (header in colMap) idx[key] = colMap[header]; else missing.push(header);
+  }
+  if (missing.length) throw new AppError("必須列が見つかりません: " + missing.join(" / ") + "（1行目の見出しを確認してください）");
+  const rows = [];
+  for (let r = 2; r <= ws.rowCount; r++) {
+    const row = ws.getRow(r);
+    const team = cellText(row.getCell(idx.team));
+    if (!team) continue;
+    const rec = { team };
+    for (const key of ["setPiece","penalty","corner","direct","indirect","throwIn","total","setPiecePct"]) {
+      const n = cellNumber(row.getCell(idx[key]));
+      if (!Number.isFinite(n)) throw new AppError(`${r}行目「${team}」の ${OPTA_COLS[key]} が数値ではありません`);
+      rec[key] = n;
+    }
+    // Opta の % は 9.52 のような100倍値 → 0.0952（浮動小数のごみを丸める）
+    rec.setPiecePct = Math.round(rec.setPiecePct * 100) / 10000;
+    rows.push(rec);
+  }
+  if (!rows.length) throw new AppError("データ行がありません（2行目以降が空です）");
+  return rows;
+}
+// parseOptaRows とは独立に、指定ヘッダの列を直接足す（合計照合用）
+function sumOptaColumn(ws, header){
+  let col = -1;
+  ws.getRow(1).eachCell({ includeEmpty: false }, (c, i) => { if (col < 0 && normHeader(cellText(c)) === header) col = i; });
+  if (col < 0) return NaN;
+  let s = 0;
+  for (let r = 2; r <= ws.rowCount; r++) { const n = cellNumber(ws.getRow(r).getCell(col)); if (Number.isFinite(n)) s += n; }
+  return s;
+}
+
+// ====================================================================
+// チーム名辞書（Google スプレッドシートの公開CSV）
+// ====================================================================
+function parseCSV(text){
+  const src = String(text || "").replace(/^﻿/, "").replace(/\r\n?/g, "\n");
+  const rows = []; let row = [], field = "", q = false;
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (q) {
+      if (ch === '"') { if (src[i+1] === '"') { field += '"'; i++; } else q = false; }
+      else field += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(field); field = ""; }
+    else if (ch === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+    else field += ch;
+  }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(c => (c || "").trim() !== ""));
+}
+const dictState = { ok: false, error: null, header: [], rows: [], loadedAt: null };
+async function loadTeamSheet(){
+  const el = $("dictStatus");
+  el.className = "dict"; el.innerHTML = '<span class="spin"></span> チーム名辞書を読み込み中…';
+  dictState.ok = false; dictState.error = null;
+  const ac = new AbortController(); const timer = setTimeout(() => ac.abort(), 15000);
+  try {
+    const res = await fetch(SHEET_CSV, { cache: "no-store", signal: ac.signal });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const rows = parseCSV(await res.text());
+    if (rows.length < 2) throw new Error("行がありません");
+    dictState.header = rows[0].map(h => (h || "").trim());
+    dictState.rows = rows.slice(1);
+    dictState.ok = true; dictState.loadedAt = new Date();
+  } catch (e) {
+    dictState.error = (e && e.name === "AbortError") ? "時間切れ（15秒）" : String(e && e.message || e);
+  } finally { clearTimeout(timer); }
+  renderDictStatus(); updateRun();
+}
+function findCol(header, ...keys){
+  for (let i = 0; i < header.length; i++) { if (keys.some(k => header[i].includes(k))) return i; }
+  return -1;
+}
+// 選択リーグの行だけから「Opta表記(小文字) → チーム名」の Map を作る
+function buildDictionary(header, rows, league){
+  const iName = findCol(header, "チーム名"); const iLeague = findCol(header, "所属リーグ", "リーグ");
+  let iOpta = findCol(header, "Opta表記"); if (iOpta < 0) iOpta = header.findIndex(h => /opta/i.test(h));
+  const out = { map: new Map(), missingColumn: iOpta < 0, teamsInLeague: 0, withOpta: 0, duplicates: [] };
+  if (iName < 0 || iLeague < 0) return out;
+  for (const r of rows) {
+    const name = (r[iName] || "").trim(); if (!name) continue;
+    if ((r[iLeague] || "").trim() !== league) continue;
+    out.teamsInLeague++;
+    if (iOpta < 0) continue;
+    const raw = (r[iOpta] || "").trim(); if (!raw) continue;
+    out.withOpta++;
+    for (const part of raw.split(/[;；]/)) {
+      const k = normKey(part); if (!k) continue;
+      if (out.map.has(k) && out.map.get(k) !== name) out.duplicates.push(part.trim() + "（" + out.map.get(k) + " / " + name + "）");
+      out.map.set(k, name);
+    }
+  }
+  return out;
+}
+function renderDictStatus(){
+  const el = $("dictStatus");
+  if (!dictState.ok) {
+    el.className = "dict bad";
+    el.innerHTML = "✘ チーム名辞書を読み込めませんでした（" + esc(dictState.error) + "）。ネット接続を確認してください。 <button class='small' id='dictRetry'>再読込</button>";
+    $("dictRetry").onclick = loadTeamSheet; return;
+  }
+  const d = buildDictionary(dictState.header, dictState.rows, currentLeague());
+  el.className = "dict";
+  let msg = `✔ チーム名辞書: ${esc(currentLeague())} ${d.teamsInLeague}クラブ`;
+  if (d.missingColumn) msg += "（⚠ シートに「Opta表記」列がありません。全クラブが英語のまま出力されます）";
+  else msg += `（Opta表記あり ${d.withOpta}クラブ）`;
+  el.innerHTML = msg + " <button class='small' id='dictRetry'>再読込</button>";
+  $("dictRetry").onclick = loadTeamSheet;
+}
+
+// ====================================================================
+// 変換・並び替え
+// ====================================================================
+function localizeAndSort(rows, dict){
+  const unknown = [];
+  const out = rows.map(r => {
+    const name = dict.get(normKey(r.team));
+    if (!name) unknown.push(r.team);
+    return Object.assign({}, r, { name: name || r.team });
+  });
+  out.sort((a, b) => (b.setPiece - a.setPiece) || (b.total - a.total) || a.name.localeCompare(b.name, "ja"));
+  return { rows: out, unknown };
+}
+function makeFileName(league, season, matchday){
+  const s = String(season).replace(/\//g, "-");
+  return `${league}_セットプレー情報_${s}_第${matchday}節.xlsx`.replace(/[\\/:*?"<>|]/g, "-");
+}
+
+// ====================================================================
+// Excel の組み立て（ExcelJS）
+// ====================================================================
+const side = st => st ? { style: st } : undefined;
+function borderOf(t, b, l, r){ const o = {}; if (t) o.top = side(t); if (b) o.bottom = side(b); if (l) o.left = side(l); if (r) o.right = side(r); return o; }
+function applyStyle(cell, s){
+  // 結合セルの従セルは主セルの style オブジェクトを参照共有しているので、必ず新しいオブジェクトに差し替えてから設定する
+  cell.style = {};
+  cell.font = { name: STYLE.font, size: s.size, bold: !!s.bold, color: { argb: s.color || STYLE.black } };
+  cell.alignment = { horizontal: "center", vertical: "middle" };
+  if (s.fill) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: s.fill } };
+  if (s.border) cell.border = s.border;
+  if (s.numFmt) cell.numFmt = s.numFmt;
+}
+function fontSize(col){ return col <= STYLE.bigCols ? 12 : 11; }
+// 表題（結合）＋見出し＋本文を書き、本文の最終行番号を返す
+function writeTable(ws, startRow, title, rows, isSecond){
+  const r0 = startRow, r1 = startRow + 1;
+  // --- 表題行（A:H 結合・薄灰・黒太字・四方 medium）
+  ws.getRow(r0).height = isSecond ? STYLE.rowH.title2 : STYLE.rowH.title;
+  ws.getCell(r0, 1).value = title;
+  if (typeof ws.mergeCellsWithoutStyle === "function") ws.mergeCellsWithoutStyle(r0, 1, r0, NCOL); else ws.mergeCells(r0, 1, r0, NCOL);
+  for (let c = 1; c <= NCOL; c++) {
+    applyStyle(ws.getCell(r0, c), { size: 12, bold: true, fill: STYLE.titleFill,
+      border: borderOf("medium", "medium", c === 1 ? "medium" : null, c === NCOL ? "medium" : null) });
+  }
+  // --- 見出し行（黒背景・白太字・上 medium・内側 thin）
+  ws.getRow(r1).height = STYLE.rowH.head;
+  for (let c = 1; c <= NCOL; c++) {
+    const cell = ws.getCell(r1, c); cell.value = OUT_HEADERS[c - 1];
+    applyStyle(cell, { size: fontSize(c), bold: true, color: STYLE.white, fill: STYLE.headFill,
+      border: borderOf("medium", "thin", c === 1 ? "medium" : "thin", c === NCOL ? "medium" : "thin"),
+      numFmt: c === NCOL ? "@" : null });
+  }
+  // --- 本文
+  const last = r1 + rows.length;
+  rows.forEach((rec, i) => {
+    const r = r1 + 1 + i; const isLast = r === last;
+    ws.getRow(r).height = STYLE.rowH.body;
+    const vals = [rec.name, rec.setPiece, rec.penalty, rec.corner, rec.direct, rec.indirect, rec.throwIn, rec.setPiecePct];
+    for (let c = 1; c <= NCOL; c++) {
+      const cell = ws.getCell(r, c); cell.value = vals[c - 1];
+      applyStyle(cell, { size: fontSize(c),
+        border: borderOf("thin", isLast ? "medium" : "thin", c === 1 ? "medium" : "thin", c === NCOL ? "medium" : "thin"),
+        numFmt: c === NCOL ? "0.00%" : null });
+    }
+  });
+  return last;
+}
+function buildWorkbook({ goals, conceded, league, season, matchday }){
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "kofa-set-piece"; wb.created = new Date();
+  const ws = wb.addWorksheet(`${matchday}節用セットプレー`);
+  STYLE.colWidths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+  const end1 = writeTable(ws, 1, `セットプレーからの得点数 (Opta) ※第${matchday}節終了時`, goals, false);
+  const gap = end1 + 1;
+  ws.getRow(gap).height = STYLE.rowH.gap;
+  for (let c = 1; c <= NCOL; c++) applyStyle(ws.getCell(gap, c), { size: fontSize(c) });
+  const start2 = gap + 1;
+  const end2 = writeTable(ws, start2, `セットプレーからの失点数 (Opta) ※第${matchday}節終了時`, conceded, true);
+  return { wb, ws, layout: { goals: { title: 1, head: 2, first: 3, last: end1 }, gap, conceded: { title: start2, head: start2 + 1, first: start2 + 2, last: end2 } } };
+}
+
+// ====================================================================
+// 検証（実行後に結果欄へ出す）
+// ====================================================================
+function verify({ league, goalsRows, concededRows, goalsSrcSum, concededSrcSum, unknownG, unknownC, dictInfo, ws, layout }){
+  const checks = [], warnings = [];
+  const lg = LEAGUE_OPTIONS.find(o => o.label === league); const expected = lg ? lg.teams : null;
+  const cntOk = expected == null || (goalsRows.length === expected && concededRows.length === expected);
+  checks.push({ ok: cntOk, label: "クラブ数", detail: `得点 ${goalsRows.length} ／ 失点 ${concededRows.length}` + (expected != null ? `（${league} は ${expected} が期待値）` : "") });
+  if (!cntOk) warnings.push(`クラブ数が ${league} の期待値 ${expected} と違います（得点 ${goalsRows.length}・失点 ${concededRows.length}）。Optaのファイルを確認してください。`);
+  const setG = new Set(goalsRows.map(r => normKey(r.team))), setC = new Set(concededRows.map(r => normKey(r.team)));
+  const onlyG = goalsRows.filter(r => !setC.has(normKey(r.team))).map(r => r.team), onlyC = concededRows.filter(r => !setG.has(normKey(r.team))).map(r => r.team);
+  const setOk = !onlyG.length && !onlyC.length;
+  checks.push({ ok: setOk, label: "得点と失点のクラブが同じ", detail: setOk ? "一致" : `得点のみ: ${onlyG.join(", ") || "なし"} ／ 失点のみ: ${onlyC.join(", ") || "なし"}` });
+  if (!setOk) warnings.push("得点用と失点用でクラブの顔ぶれが違います。別のリーグ・別の節のファイルが混ざっていないか確認してください。");
+  // 出来上がったシートの Total 列を読み直して、元ファイルの列合計と突き合わせる
+  const sumCol = (first, last) => { let s = 0; for (let r = first; r <= last; r++) s += Number(ws.getCell(r, 2).value) || 0; return s; };
+  const outG = sumCol(layout.goals.first, layout.goals.last), outC = sumCol(layout.conceded.first, layout.conceded.last);
+  const sumOk = outG === goalsSrcSum && outC === concededSrcSum;
+  checks.push({ ok: sumOk, label: "Total の合計が元ファイルと一致", detail: `得点 ${outG}（元 ${goalsSrcSum}）／ 失点 ${outC}（元 ${concededSrcSum}）` });
+  if (!sumOk) warnings.push("出来上がった表の合計が元ファイルと一致しません。このファイルは使わず、ページを再読み込みしてやり直してください。");
+  const unknown = [...new Set([...unknownG, ...unknownC])];
+  checks.push({ ok: !unknown.length && !dictInfo.missingColumn, label: "クラブ名の日本語化", detail: dictInfo.missingColumn ? "シートに「Opta表記」列がないため全クラブ英語のまま" : (unknown.length ? `未登録 ${unknown.length}件（英語のまま出力）` : "全クラブ日本語化") });
+  if (dictInfo.missingColumn) warnings.push("共有シートに「Opta表記」列がありません。列を追加すると日本語化されます。");
+  else if (unknown.length) warnings.push("辞書に無いクラブ（共有シートの該当クラブの「Opta表記」欄に、次の英語名をそのまま追記してください）: " + unknown.join(" / "));
+  if (dictInfo.duplicates.length) warnings.push("同じOpta表記が複数クラブに登録されています: " + dictInfo.duplicates.join(" / "));
+  if (dictInfo.teamsInLeague === 0) warnings.push(`共有シートに「所属リーグ＝${league}」のクラブがありません。`);
+  return { checks, warnings, fatal: !sumOk };
+}
+
+// ====================================================================
+// 画面
+// ====================================================================
+const files = { goals: null, conceded: null };
+let exceljsReady = false;
+const runBtn = $("run"), statusEl = $("status");
+
+function currentLeague(){ return $("league").value; }
+function seasonValue(){ const s = $("season"); return s.value === CUSTOM_VAL ? ($("seasonCustom").value || "").trim() : s.value; }
+function matchdayValue(){ const n = parseInt($("matchday").value, 10); return (Number.isInteger(n) && n >= 1 && n <= 38) ? n : null; }
+function updateRun(){
+  runBtn.disabled = !(exceljsReady && dictState.ok && files.goals && files.conceded && /^\d{4}\/\d{2}$/.test(seasonValue()) && matchdayValue());
+}
+function showFile(kind){
+  const f = files[kind]; const cap = kind === "goals" ? "Goals" : "Conceded";
+  $("line" + cap).className = "fileline" + (f ? " show" : "");
+  $("drop" + cap).classList.toggle("has", !!f);
+  if (f) { $("name" + cap).textContent = f.name; $("kb" + cap).textContent = Math.round(f.size / 1024) + " KB"; }
+}
+// 落とされたファイルを得点／失点に振り分ける（2つ以上なら名前で判定）
+function classifyFiles(list, droppedKind){
+  const xs = [...list].filter(f => /\.xlsx$/i.test(f.name));
+  if (!xs.length) return;
+  if (xs.length === 1) { files[droppedKind] = xs[0]; }
+  else {
+    for (const f of xs) { if (/conceded/i.test(f.name)) files.conceded = f; else files.goals = f; }
+  }
+  showFile("goals"); showFile("conceded"); updateRun();
+}
+for (const kind of ["goals", "conceded"]) {
+  const cap = kind === "goals" ? "Goals" : "Conceded";
+  const drop = $("drop" + cap), input = $("file" + cap);
+  drop.onclick = () => input.click();
+  input.onchange = e => { classifyFiles(e.target.files, kind); input.value = ""; };
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("hover"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("hover"); }));
+  drop.addEventListener("drop", e => classifyFiles(e.dataTransfer.files, kind));
+  $("rm" + cap).onclick = () => { files[kind] = null; showFile(kind); updateRun(); };
+}
+(function initSettings(){
+  const ls = $("league");
+  for (const o of LEAGUE_OPTIONS) { const op = document.createElement("option"); op.value = o.label; op.textContent = o.label; ls.appendChild(op); }
+  ls.onchange = () => { renderDictStatus(); updateRun(); };
+  // シーズン: 7月以降は当年始まり。前後1年＋自由入力
+  const now = new Date(); const cur = (now.getMonth() + 1 >= 7) ? now.getFullYear() : now.getFullYear() - 1;
+  const ss = $("season");
+  for (let y = cur - 1; y <= cur + 1; y++) { const op = document.createElement("option"); op.value = `${y}/${String((y + 1) % 100).padStart(2, "0")}`; op.textContent = op.value; ss.appendChild(op); }
+  const oc = document.createElement("option"); oc.value = CUSTOM_VAL; oc.textContent = "その他…（自由入力）"; ss.appendChild(oc);
+  ss.value = `${cur}/${String((cur + 1) % 100).padStart(2, "0")}`;
+  ss.onchange = () => { const c = ss.value === CUSTOM_VAL; $("seasonCustom").style.display = c ? "" : "none"; if (c) $("seasonCustom").focus(); updateRun(); };
+  $("seasonCustom").oninput = updateRun;
+  $("matchday").oninput = updateRun;
+})();
+(function initExcelJS(){
+  if (window.__exceljsFailed || typeof ExcelJS === "undefined") {
+    statusEl.textContent = "⚠ Excelを作る部品（ExcelJS " + EXCELJS_VERSION + "）を読み込めませんでした。ネット接続を確認してページを再読み込みしてください。";
+    return;
+  }
+  exceljsReady = true; statusEl.style.display = "none"; updateRun();
+})();
+loadTeamSheet();
+
+function download(name, buf){
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  if (download.lastUrl) URL.revokeObjectURL(download.lastUrl);
+  const url = URL.createObjectURL(blob); download.lastUrl = url;
+  const a = document.createElement("a"); a.className = "zipbtn"; a.href = url; a.download = name; a.textContent = "⬇ " + name;
+  $("dl").innerHTML = ""; $("dl").appendChild(a);
+  a.click();   // 1ファイルなので即ダウンロード開始（ボタンも残すので再取得できる）
+}
+function renderChecks(checks){
+  const t = document.createElement("table"); t.className = "checks";
+  for (const c of checks) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="${c.ok ? "ok-mark" : "ng-mark"}">${c.ok ? "✔" : "✘"}</td><td>${esc(c.label)}</td><td>${esc(c.detail)}</td>`;
+    t.appendChild(tr);
+  }
+  $("checks").innerHTML = ""; $("checks").appendChild(t);
+}
+runBtn.onclick = async () => {
+  if (runBtn.disabled) return;
+  runBtn.disabled = true; runBtn.textContent = "処理中…";
+  logEl.textContent = ""; $("dl").innerHTML = ""; $("checks").innerHTML = "";
+  $("summary").textContent = ""; $("summary").className = "summary";
+  $("alert").className = "alert"; $("alert").innerHTML = "";
+  $("warnings").className = "warns"; $("warnings").innerHTML = "";
+  const league = currentLeague(), season = seasonValue(), matchday = matchdayValue();
+  try {
+    log(`設定: ${league} / ${season} / 第${matchday}節`);
+    const dictInfo = buildDictionary(dictState.header, dictState.rows, league);
+    log(`辞書: ${league} ${dictInfo.teamsInLeague}クラブ（Opta表記あり ${dictInfo.withOpta}）`);
+    const wbG = await readOptaWorkbook(files.goals), wbC = await readOptaWorkbook(files.conceded);
+    const wsG = findOptaSheet(wbG), wsC = findOptaSheet(wbC);
+    log(`得点用: ${files.goals.name}（シート「${wsG.name}」）／ 失点用: ${files.conceded.name}（シート「${wsC.name}」）`);
+    const rawG = parseOptaRows(wsG), rawC = parseOptaRows(wsC);
+    const goals = localizeAndSort(rawG, dictInfo.map), conceded = localizeAndSort(rawC, dictInfo.map);
+    log("得点（並び替え後）:\n" + goals.rows.map((r, i) => `  ${i + 1}. ${r.name}  SP=${r.setPiece} T=${r.total} P=${r.penalty} C=${r.corner} D=${r.direct} I=${r.indirect} Th=${r.throwIn} %=${r.setPiecePct}`).join("\n"));
+    log("失点（並び替え後）:\n" + conceded.rows.map((r, i) => `  ${i + 1}. ${r.name}  SP=${r.setPiece} T=${r.total} P=${r.penalty} C=${r.corner} D=${r.direct} I=${r.indirect} Th=${r.throwIn} %=${r.setPiecePct}`).join("\n"));
+    const { wb, ws, layout } = buildWorkbook({ goals: goals.rows, conceded: conceded.rows, league, season, matchday });
+    const v = verify({ league, goalsRows: rawG, concededRows: rawC,
+      goalsSrcSum: sumOptaColumn(wsG, OPTA_COLS.setPiece), concededSrcSum: sumOptaColumn(wsC, OPTA_COLS.setPiece),
+      unknownG: goals.unknown, unknownC: conceded.unknown, dictInfo, ws, layout });
+    renderChecks(v.checks);
+    v.checks.forEach(c => log(`${c.ok ? "✔" : "✘"} ${c.label}: ${c.detail}`));
+    if (v.fatal) throw new AppError("合計の照合に失敗したため、ファイルを出力しませんでした。");
+    const name = makeFileName(league, season, matchday);
+    download(name, await wb.xlsx.writeBuffer());
+    log("出力: " + name + "（シート「" + ws.name + "」）");
+    if (v.warnings.length) {
+      $("warnings").className = "warns show";
+      $("warnings").innerHTML = "⚠ 確認してください<ul>" + v.warnings.map(w => "<li>" + esc(w) + "</li>").join("") + "</ul>";
+      $("summary").textContent = "⚠ Excelを作りました（注意点があります。下の一覧を確認してください）"; $("summary").className = "summary warn";
+      $("detail").open = true;
+    } else {
+      $("summary").textContent = "✔ Excelを作りました（クラブ数・合計・日本語化すべて確認済み）"; $("summary").className = "summary ok";
+    }
+  } catch (e) {
+    const msg = (e instanceof AppError) ? e.message : ("予期しないエラー: " + (e && e.message || e));
+    if (!(e instanceof AppError)) console.error(e);
+    $("alert").className = "alert danger"; $("alert").innerHTML = "⚠ <b>ファイルを作れませんでした</b><br>" + esc(msg);
+    log("!! エラー: " + msg); $("detail").open = true;
+  }
+  runBtn.textContent = "▶ セットプレーExcelを作る"; updateRun();
+};
+
+// テストから直接叩けるように純関数を公開
+window.KSP = { parseCSV, parseOptaRows, buildDictionary, localizeAndSort, buildWorkbook, verify, makeFileName, normKey, LEAGUE_OPTIONS, STYLE, OUT_HEADERS };
+</script>
+</body>
+</html>
