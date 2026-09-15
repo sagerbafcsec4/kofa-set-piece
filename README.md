@@ -70,7 +70,7 @@ Optaの「What Scored - Goals」「What Conceded - Goals」の2つのExcelを落
 | 見出し | Team / Total / Penalties / Corners / Direct Freekicks / Indirect Freekicks / Throw In / Goals From Set Piece ％（長いものは2行・％は全角。2026-09-15変更） |
 | 列の対応 | Total←Goals From Set Piece、Penalty←…Penalties、Corners←…Corner、Dir.←…Direct Freekicks、Ind.←…Indirect Freekicks、Throws←…Throw In、％←…Set Piece % の値そのまま（42.86 のように。表示形式 `0.00"％"` で全角％を付ける。2026-09-15変更・旧は÷100して 0.00%） |
 | 並び | セットプレー得点（失点）の降順 → 同点は Opta ファイルの並び（Rk順）をそのまま（2026-09-15変更。旧: Optaの Total 降順 → 日本語名の昇順） |
-| 体裁 | 全セル MS UI Gothic・中央揃え・「縮小して全体を表示」（見出し行だけ「折り返し」＝2行表示）。表題: 薄灰 `E7E6E6`・黒太字12pt・四方太線。見出し: 黒背景・白太字（A〜D 12pt／E〜H 11pt）。本文: 外周太線・内側細線。％列は `0.00"％"`（値は Opta の100倍値そのまま）。列幅 A=25・B〜H=13（2026-09-15 ユーザー指定。初版はテンプレ実測値 Meiryo UI／21.7…） |
+| 体裁 | 全セル MS UI Gothic・中央揃え・「縮小して全体を表示」（見出し行だけ「折り返し」＝2行表示）。表題: 薄灰 `E7E6E6`・黒太字12pt・四方太線。見出し: 黒背景・白太字。本文: 外周太線・内側細線。％列は `0.00"％"`（値は Opta の100倍値そのまま）。文字サイズ 表題12／見出し11／表13（全列同じ）。行の高さ 表題20／見出し30／表15／空き行30。列幅 A=25・B〜G=13・H=20.78（2026-09-15 第6節の元Excel「ラ・リーガ_セットプレー情報_2026-27_第5節.xlsx」に合わせた。初版はテンプレ実測値 Meiryo UI／21.7…） |
 
 ## 対戦チームの色付け（2026-09-15追加）
 

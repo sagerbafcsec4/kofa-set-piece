@@ -40,8 +40,8 @@ OPTA_COLS = {
     "setPiecePct": "goals from set piece %",
 }
 OUT_HEADERS = ["Team", "Total", "Penalties", "Corners", "Direct\nFreekicks", "Indirect\nFreekicks", "Throw In", "Goals From\nSet Piece ％"]
-COL_WIDTHS = [25, 13, 13, 13, 13, 13, 13, 13]
-ROW_H = {"title": 19.5, "head": 30, "body": 17.25, "gap": 18, "title2": 18.6}
+COL_WIDTHS = [25, 13, 13, 13, 13, 13, 13, 20.78]
+ROW_H = {"title": 20, "head": 30, "body": 15, "gap": 30, "title2": 20}
 FONT = "MS UI Gothic"
 TITLE_FILL, HEAD_FILL, WHITE, BLACK = "FFE7E6E6", "FF000000", "FFFFFFFF", "FF000000"
 ERR_RE = re.compile(r"#(REF!|DIV/0!|VALUE!|NAME\?|N/A|NUM!|NULL!)")
@@ -199,7 +199,7 @@ def check_table(ws, rep, start_row, title, rows, is_second, tag, off=0, hl=None)
     bad = []
     for c in range(1, 9):
         cell = cl(r1, c)
-        exp = dict(font=FONT, size=12 if c <= 4 else 11, bold=True, color=WHITE, fill=HEAD_FILL, h="center", v="center", wrap=True,
+        exp = dict(font=FONT, size=11, bold=True, color=WHITE, fill=HEAD_FILL, h="center", v="center", wrap=True,
                    top="medium", bottom="thin", left="medium" if c == 1 else "thin", right="medium" if c == 8 else "thin",
                    fmt="@" if c == 8 else "General")
         got = dict(font=cell.font.name, size=cell.font.size, bold=bool(cell.font.bold), color=font_rgb(cell), fill=fill_rgb(cell),
@@ -235,7 +235,7 @@ def check_table(ws, rep, start_row, title, rows, is_second, tag, off=0, hl=None)
             bad.append(f"行{r}の高さ {ws.row_dimensions[r].height}")
         for c in range(1, 9):
             cell = cl(r, c)
-            exp = dict(font=FONT, size=12 if c <= 4 else 11, bold=bool(hfill), fill=hfill, h="center", v="center", shrink=True,
+            exp = dict(font=FONT, size=13, bold=bool(hfill), fill=hfill, h="center", v="center", shrink=True,
                        top="thin", bottom="medium" if is_last else "thin", left="medium" if c == 1 else "thin", right="medium" if c == 8 else "thin",
                        fmt='0.00"％"' if c == 8 else "General")
             got = dict(font=cell.font.name, size=cell.font.size, bold=bool(cell.font.bold), fill=fill_rgb(cell),

@@ -288,9 +288,12 @@ const STYLE = {
   font: "MS UI Gothic",   // 2026-09-15 ユーザー指定（旧: Meiryo UI）
   titleFill: "FFE7E6E6", headFill: "FF000000", white: "FFFFFFFF", black: "FF000000",
   // 2026-09-15 ユーザー指定: A=25、B〜H=13（旧: テンプレ実測値。ExcelJS は幅がちょうど 9 だと省略する癖があるので 9 は使わない）
-  colWidths: [25, 13, 13, 13, 13, 13, 13, 13],
-  rowH: { title: 19.5, head: 30, body: 17.25, gap: 18, title2: 18.6 },
-  bigCols: 4,   // A〜D列は12pt、E〜H列は11pt
+  // 2026-09-15 第6節の元Excelに合わせ H列（Goals From Set Piece ％）は 20.78
+  colWidths: [25, 13, 13, 13, 13, 13, 13, 20.78],
+  // 2026-09-15 ユーザー指定: 表題 高さ20／見出し 30／表 15（空き行は元Excelに合わせ 30）
+  rowH: { title: 20, head: 30, body: 15, gap: 30, title2: 20 },
+  // 文字サイズ（2026-09-15 ユーザー指定）: 表題 12・見出し 11・表 13（全列同じ。旧: A〜D 12／E〜H 11）
+  fontTitle: 12, fontHead: 11, fontBody: 13,
 };
 const NCOL = 8;
 
@@ -537,7 +540,7 @@ function applyStyle(cell, s){
   if (s.border) cell.border = s.border;
   if (s.numFmt) cell.numFmt = s.numFmt;
 }
-function fontSize(col){ return col <= STYLE.bigCols ? 12 : 11; }
+function fontSize(){ return STYLE.fontBody; }
 // 表題（結合）＋見出し＋本文を書き、本文の最終行番号を返す。
 // off = 列のずらし幅（0 なら A〜H、9 なら J〜Q …）。highlight = Map(日本語名 → 塗り色ARGB) で該当行を塗り＋太字
 function writeTable(ws, startRow, title, rows, isSecond, off = 0, highlight = null){
@@ -548,14 +551,14 @@ function writeTable(ws, startRow, title, rows, isSecond, off = 0, highlight = nu
   ws.getCell(r0, C(1)).value = title;
   if (typeof ws.mergeCellsWithoutStyle === "function") ws.mergeCellsWithoutStyle(r0, C(1), r0, C(NCOL)); else ws.mergeCells(r0, C(1), r0, C(NCOL));
   for (let c = 1; c <= NCOL; c++) {
-    applyStyle(ws.getCell(r0, C(c)), { size: 12, bold: true, fill: STYLE.titleFill,
+    applyStyle(ws.getCell(r0, C(c)), { size: STYLE.fontTitle, bold: true, fill: STYLE.titleFill,
       border: borderOf("medium", "medium", c === 1 ? "medium" : null, c === NCOL ? "medium" : null) });
   }
   // --- 見出し行（黒背景・白太字・上 medium・内側 thin）
   ws.getRow(r1).height = STYLE.rowH.head;
   for (let c = 1; c <= NCOL; c++) {
     const cell = ws.getCell(r1, C(c)); cell.value = OUT_HEADERS[c - 1];
-    applyStyle(cell, { size: fontSize(c), bold: true, color: STYLE.white, fill: STYLE.headFill, wrap: true,
+    applyStyle(cell, { size: STYLE.fontHead, bold: true, color: STYLE.white, fill: STYLE.headFill, wrap: true,
       border: borderOf("medium", "thin", c === 1 ? "medium" : "thin", c === NCOL ? "medium" : "thin"),
       numFmt: c === NCOL ? "@" : null });
   }
