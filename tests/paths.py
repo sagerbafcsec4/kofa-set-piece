@@ -14,7 +14,7 @@ CONCEDED = os.path.join(SRC_DIR, "#5Conceded.xlsx")
 LEAGUE = "ラ・リーガ"
 SEASON = "2026/27"
 MATCHDAY = 5
-EXPECTED_FILENAME = "ラ・リーガ_セットプレー情報_2026-27_第5節.xlsx"
+EXPECTED_FILENAME = "ラ・リーガ_セットプレー情報_2627第5節.xlsx"
 
 SHEET_CSV = ("https://docs.google.com/spreadsheets/d/e/2PACX-1vRfxZY4XyfVh5oL7Fk8nTF1wdhDdzcscTlL1ZTVpu2P2hJ_kg-abbu4HFziWrgkRRuTL-Q_TLxzFrlc"
              "/pub?gid=0&single=true&output=csv")

@@ -112,8 +112,8 @@ UNIT_JS = r"""
   t("シートを開くボタン", /docs\.google\.com\/spreadsheets/.test(document.querySelector("#page-teams a.zipbtn").href), document.querySelector("#page-teams a.zipbtn").href);
   document.querySelector('.tab[data-page="main"]').click();
   // makeFileName
-  t("ファイル名", KSP.makeFileName("ラ・リーガ","2026/27",5) === "ラ・リーガ_セットプレー情報_2026-27_第5節.xlsx", KSP.makeFileName("ラ・リーガ","2026/27",5));
-  t("ファイル名（暫定）", KSP.makeFileName("ラ・リーガ","2026/27",5,true) === "ラ・リーガ_セットプレー情報_2026-27_第5節暫定.xlsx", KSP.makeFileName("ラ・リーガ","2026/27",5,true));
+  t("ファイル名", KSP.makeFileName("ラ・リーガ","2026/27",5) === "ラ・リーガ_セットプレー情報_2627第5節.xlsx", KSP.makeFileName("ラ・リーガ","2026/27",5));
+  t("ファイル名（暫定）", KSP.makeFileName("ラ・リーガ","2026/27",5,true) === "ラ・リーガ_セットプレー情報_2627第5節暫定.xlsx", KSP.makeFileName("ラ・リーガ","2026/27",5,true));
   return out;
 }
 """
