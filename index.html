@@ -697,8 +697,9 @@ function renderMatches(){
   };
   const colorSel = (val, onchange) => {
     const sel = document.createElement("select");
-    for (const p of PALETTE) { const o = document.createElement("option"); o.value = p.key; o.textContent = "■ " + p.label; o.style.color = "#" + p.argb.slice(2); sel.appendChild(o); }
-    sel.value = val; sel.style.background = "#" + paletteArgb(val).slice(2);
+    // 各項目は「その色の背景＋黒い文字」（文字を色にすると薄くて読めない）
+    for (const p of PALETTE) { const o = document.createElement("option"); o.value = p.key; o.textContent = p.label; o.style.background = "#" + p.argb.slice(2); o.style.color = "#111"; sel.appendChild(o); }
+    sel.value = val; sel.style.background = "#" + paletteArgb(val).slice(2); sel.style.color = "#111"; sel.style.fontWeight = "700";
     sel.onchange = () => { onchange(sel.value); sel.style.background = "#" + paletteArgb(sel.value).slice(2); }; return sel;
   };
   matchList.forEach((m, i) => {
