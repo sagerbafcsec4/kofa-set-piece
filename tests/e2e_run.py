@@ -104,6 +104,14 @@ UNIT_JS = r"""
   t("色付け 1組目: セビージャ黄・エルチェ黄緑・レアル無色", fillOf(3, 1) === "FFFFFF00" && fillOf(3, 8) === "FFFFFF00" && fillOf(5, 1) === "FF92D050" && fillOf(4, 1) === null && wbH.ws.getCell(3, 1).font.bold === true && wbH.ws.getCell(4, 1).font.bold === false, JSON.stringify([fillOf(3,1), fillOf(4,1), fillOf(5,1)]));
   t("色付け 2組目: レアルピンク・エルチェ青・セビージャ無色", fillOf(4, 10) === "FFFF9999" && fillOf(5, 10) === "FFB4C6E7" && fillOf(3, 10) === null, JSON.stringify([fillOf(3,10), fillOf(4,10), fillOf(5,10)]));
   t("色付け 失点表にも同じ色", fillOf(9, 1) === "FFFFFF00" && fillOf(10, 10) === "FFFF9999", JSON.stringify([fillOf(9,1), fillOf(10,10)]));
+  // チーム一覧タブ
+  const tt = KSP.teamTableRows("ラ・リーガ");
+  t("チーム一覧 ラ・リーガ20行", tt.length === 20 && tt.every(r => r.opta), tt.length);
+  t("チーム一覧 出どころはシート優先", tt.filter(r => r.src === "sheet").length === 20, JSON.stringify(tt.map(r=>r.src)));
+  document.querySelector('.tab[data-page="teams"]').click();
+  t("チーム一覧タブに切り替わる", document.querySelector("#page-teams").classList.contains("active") && document.querySelectorAll("#teamRows tr").length >= 58, document.querySelectorAll("#teamRows tr").length);
+  t("シートを開くボタン", /docs\.google\.com\/spreadsheets/.test(document.querySelector("#page-teams a.zipbtn").href), document.querySelector("#page-teams a.zipbtn").href);
+  document.querySelector('.tab[data-page="main"]').click();
   // makeFileName
   t("ファイル名", KSP.makeFileName("ラ・リーガ","2026/27",5) === "ラ・リーガ_セットプレー情報_2026-27_第5節.xlsx", KSP.makeFileName("ラ・リーガ","2026/27",5));
   t("ファイル名（暫定）", KSP.makeFileName("ラ・リーガ","2026/27",5,true) === "ラ・リーガ_セットプレー情報_2026-27_第5節暫定.xlsx", KSP.makeFileName("ラ・リーガ","2026/27",5,true));
@@ -114,6 +122,8 @@ UNIT_JS = r"""
 
 def run_unit_tests(page):
     page.wait_for_function("typeof window.KSP === 'object'", timeout=20000)
+    # 共有シートの読み込み完了を待つ（チーム一覧・辞書のテストが「シート優先」を前提にするため）
+    page.wait_for_function("/^(✔|⚠)/.test(document.querySelector('#dictStatus').innerText.trim())", timeout=40000)
     results = page.evaluate(UNIT_JS)
     # 内蔵表（index.html）と docs/opta-names-draft.csv が同内容か
     import csv

@@ -70,6 +70,17 @@
   table.matches select{ width:100%; font:inherit; font-size:13.5px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; background:#fff; }
   table.matches .sw{ display:inline-block; width:14px; height:14px; border-radius:3px; border:1px solid #94a3b8; vertical-align:-2px; margin-right:4px; }
   textarea.dateinput{ resize:vertical; font-family:inherit; }
+  .tabs{ display:flex; gap:6px; margin:0 0 16px; border-bottom:2px solid var(--line); }
+  .tab{ background:none; border:0; border-bottom:3px solid transparent; margin-bottom:-2px; padding:8px 16px; font-weight:700; color:var(--muted); border-radius:0; cursor:pointer; }
+  .tab.active{ color:var(--p1); border-bottom-color:var(--p1); }
+  .tab:hover{ color:var(--p1); }
+  .page{ display:none; } .page.active{ display:block; }
+  .tablewrap{ overflow-x:auto; }
+  table.teams{ border-collapse:collapse; width:100%; font-size:.88rem; }
+  table.teams th{ text-align:left; font-weight:700; color:var(--muted); font-size:.8rem; padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  table.teams td{ padding:5px 8px; border-bottom:1px solid #eef0f4; vertical-align:top; }
+  table.teams .src{ display:inline-block; padding:1px 8px; border-radius:999px; font-size:.78rem; font-weight:700; }
+  .src.sheet{ background:#dcfce7; color:#166534; } .src.builtin{ background:var(--soft); color:var(--p1); } .src.none{ background:#fdecec; color:#9b1c1c; }
   .dict{ margin-top:14px; padding:10px 12px; border-radius:10px; font-size:.86rem; background:var(--soft); border:1px solid var(--line); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .dict.bad{ background:#fdecec; border-color:#f3b4b4; color:#9b1c1c; }
   .summary{ font-size:.98rem; font-weight:700; margin:2px 0 10px; }
@@ -110,6 +121,12 @@
       <p class="sub">Optaの「What Scored / What Conceded」から、日本語のセットプレー得点・失点表を作ります</p>
     </div>
   </header>
+  <div class="tabs">
+    <button class="tab active" data-page="main">セットプレーExcel作成</button>
+    <button class="tab" data-page="teams">チーム一覧</button>
+  </div>
+
+  <div class="page active" id="page-main">
 
   <div class="card">
     <h2><span class="num">1</span>Optaのファイルを読み込む（.xlsx）</h2>
@@ -183,6 +200,25 @@
     <div id="checks"></div>
     <details class="detail" id="detail"><summary>処理の詳細を表示</summary><div id="log"></div></details>
     <div class="safe">やるのは、Optaの数値を並べ替えて日本語のクラブ名に置き換え、割合を「％」の形にすることだけです。<b>数値そのものは変えません</b>（出来上がった表の<b>全セル</b>を元ファイルの値と1つずつ自動照合し、1か所でも違えばファイルを出しません）。処理はすべてブラウザ内で完結し、<b>Optaのファイルは外部送信されません</b>。読みに行くのはチーム名辞書（Googleスプレッドシートの公開CSV）だけです。</div>
+  </div>
+  </div>
+
+  <div class="page" id="page-teams">
+    <div class="card">
+      <h2>チーム一覧（共有スプレッドシート）</h2>
+      <p class="hint" style="margin:0 0 12px; font-size:.86rem;">クラブ名の日本語表記とOptaの英語名（Opta表記）は、Excelフォーマット作成アプリと同じ共有スプレッドシートで管理しています。表記を変える・クラブを足すときは、下のボタンでシートを開いて直接編集し、戻ってきたら「再読込」を押してください。シートに「Opta表記」がある行はそちらが優先、無い行はアプリ内蔵の対応表で補います。</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
+        <a class="zipbtn" style="margin:0; font-size:.92rem; padding:10px 18px;" href="https://docs.google.com/spreadsheets/d/1USqNCDdUBc2hJfv4Vw5JuORWfUF6kitjEasfvelm6MQ/edit?gid=0#gid=0" target="_blank" rel="noopener">📝 共有スプレッドシートを開いて編集</a>
+        <button class="small" id="teamsReload">再読込</button>
+        <select id="teamsLeague" class="dateinput" style="width:auto; padding:6px 10px;"><option value="">すべてのリーグ</option></select>
+        <span class="hint" id="teamsStatus" style="margin:0"></span>
+      </div>
+      <div class="tablewrap"><table class="teams" id="teamTable">
+        <thead><tr><th style="width:36px">#</th><th>チーム名（出力に使う表記）</th><th>所属リーグ</th><th>Opta表記（英語名。; 区切りで複数可）</th><th>出どころ</th></tr></thead>
+        <tbody id="teamRows"></tbody>
+      </table></div>
+      <div class="hint">「出どころ」: <b>シート</b>＝共有シートのOpta表記を使用（優先）／<b>内蔵</b>＝シートに英語名が無いのでアプリ内蔵の対応表で補っている／<b>未対応</b>＝どちらにも英語名が無く、このクラブは英語のまま出力される（シートのOpta表記に書き足してください）</div>
+    </div>
   </div>
 </div>
 
@@ -413,7 +449,7 @@ async function loadTeamSheet(){
   } catch (e) {
     dictState.error = (e && e.name === "AbortError") ? "時間切れ（15秒）" : String(e && e.message || e);
   } finally { clearTimeout(timer); dictState.loading = false; }
-  renderDictStatus(); renderMatches(); updateRun();
+  renderDictStatus(); renderMatches(); renderTeamTable(); updateRun();
 }
 function findCol(header, ...keys){
   for (let i = 0; i < header.length; i++) { if (keys.some(k => header[i].includes(k))) return i; }
@@ -845,8 +881,60 @@ runBtn.onclick = async () => {
   runBtn.textContent = "▶ セットプレーExcelを作る"; updateRun();
 };
 
+// ---- タブ ----
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("active", x === t));
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === "page-" + t.dataset.page));
+  if (t.dataset.page === "teams") renderTeamTable();
+});
+// ---- チーム一覧 ----
+function teamTableRows(leagueFilter){
+  const rows = [];
+  const leagues = leagueFilter ? [leagueFilter] : LEAGUE_OPTIONS.map(o => o.label);
+  const iName = dictState.ok ? findCol(dictState.header, "チーム名") : -1;
+  const iLeague = dictState.ok ? findCol(dictState.header, "所属リーグ", "リーグ") : -1;
+  let iOpta = dictState.ok ? findCol(dictState.header, "Opta表記") : -1;
+  if (dictState.ok && iOpta < 0) iOpta = dictState.header.findIndex(h => /opta/i.test(h));
+  for (const lg of leagues) {
+    const builtin = new Map((BUILTIN_DICT[lg] || []).map(p => [p[0], p[1]]));
+    const seen = new Set();
+    if (dictState.ok && iName >= 0 && iLeague >= 0) {
+      for (const r of dictState.rows) {
+        const name = (r[iName] || "").trim(); if (!name || (r[iLeague] || "").trim() !== lg) continue;
+        seen.add(name);
+        const sheetOpta = iOpta >= 0 ? (r[iOpta] || "").trim() : "";
+        const b = builtin.get(name) || "";
+        rows.push({ name, league: lg, opta: sheetOpta || b, src: sheetOpta ? "sheet" : (b ? "builtin" : "none") });
+      }
+    }
+    for (const [name, opta] of builtin) if (!seen.has(name)) rows.push({ name, league: lg, opta, src: "builtin" });
+  }
+  return rows;
+}
+function renderTeamTable(){
+  const tb = $("teamRows"); if (!tb) return;
+  const rows = teamTableRows($("teamsLeague").value);
+  tb.innerHTML = "";
+  const label = { sheet: "シート", builtin: "内蔵", none: "未対応" };
+  rows.forEach((r, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${i + 1}</td><td>${esc(r.name)}</td><td>${esc(r.league)}</td><td>${esc(r.opta) || "<span style='color:var(--warn)'>（なし）</span>"}</td><td><span class="src ${r.src}">${label[r.src]}</span></td>`;
+    tb.appendChild(tr);
+  });
+  const n = { sheet: 0, builtin: 0, none: 0 }; rows.forEach(r => n[r.src]++);
+  $("teamsStatus").textContent = dictState.ok
+    ? `${rows.length}クラブ（シート優先 ${n.sheet}／内蔵で補完 ${n.builtin}／未対応 ${n.none}）` + (dictState.loadedAt ? `・共有シート読込 ${dictState.loadedAt.toLocaleTimeString("ja-JP")}` : "")
+    : `共有シートを読み込めていません（${dictState.error || "読込中"}）。内蔵の対応表だけを表示しています`;
+}
+(function initTeams(){
+  const sel = $("teamsLeague");
+  for (const o of LEAGUE_OPTIONS) { const op = document.createElement("option"); op.value = o.label; op.textContent = o.label; sel.appendChild(op); }
+  sel.onchange = renderTeamTable;
+  $("teamsReload").onclick = async () => { await loadTeamSheet(); renderTeamTable(); };
+})();
+
 // テストから直接叩けるように純関数を公開
-window.KSP = { parseCSV, parseOptaRows, buildDictionary, localizeAndSort, buildWorkbook, verify, makeFileName, normKey, compareAllCells, importPastedMatches, teamNamesForLeague, matchList, LEAGUE_OPTIONS, STYLE, OUT_HEADERS, BUILTIN_DICT, PALETTE };
+window.KSP = { parseCSV, parseOptaRows, buildDictionary, localizeAndSort, buildWorkbook, verify, makeFileName, normKey, compareAllCells, importPastedMatches, teamNamesForLeague, teamTableRows, matchList, LEAGUE_OPTIONS, STYLE, OUT_HEADERS, BUILTIN_DICT, PALETTE };
 </script>
 </body>
 </html>
