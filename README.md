@@ -25,6 +25,7 @@ Optaの「What Scored - Goals」「What Conceded - Goals」の2つのExcelを落
    初回のみ `npx wrangler login` でのログインが必要。古い表示が出たら Ctrl+F5。
    ⑥の照合が「証明書」のエラーで失敗することがある（2026-09-14 初回公開時に発生。送信自体は成功していた）。
    その場合はブラウザで公開URLを開き、画面が最新か（Ctrl+F5）を目で確認すればよい。
+   さらに 2026-09-15 以降は鍵（Access）が掛かっているため、⑥は常に「取れない／不一致」になる。⑤の「Deployment complete」が出ていれば送信は成功。最終確認は自分のブラウザでログインして Ctrl+F5。
    **注意**: `wrangler pages project create` は新方式（Workers統合）に流れるため、枠を作り直すときだけ `--force` を付ける（初回に誤って新方式で作ってしまい撤去した経緯あり）。
 
 別のPC・別のClaude/Coworkで作業するときも、**まずこの README と `index.html` を読めば全体を把握できます。**
