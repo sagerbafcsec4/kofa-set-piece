@@ -207,7 +207,7 @@
   <div class="page" id="page-teams">
     <div class="card">
       <h2>チーム一覧（共有スプレッドシート）</h2>
-      <p class="hint" style="margin:0 0 12px; font-size:.86rem;">クラブ名の日本語表記とOptaの英語名（Opta表記）は、Excelフォーマット作成アプリと同じ共有スプレッドシートで管理しています。表記を変える・クラブを足すときは、下のボタンでシートを開いて直接編集し、戻ってきたら「再読込」を押してください。シートに「Opta表記」がある行はそちらが優先、無い行はアプリ内蔵の対応表で補います。</p>
+      <p class="hint" style="margin:0 0 12px; font-size:.86rem;">クラブ名の日本語表記とOptaの英語名（Opta表記）は、Excelフォーマット作成アプリと同じ共有スプレッドシートで管理しています。表記を変える・クラブを足すときは、下のボタンでシートを開いて直接編集し、戻ってきたら「再読込」を押してください。</p>
       <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
         <a class="zipbtn" style="margin:0; font-size:.92rem; padding:10px 18px;" href="https://docs.google.com/spreadsheets/d/1USqNCDdUBc2hJfv4Vw5JuORWfUF6kitjEasfvelm6MQ/edit?gid=0#gid=0" target="_blank" rel="noopener">📝 共有スプレッドシートを開いて編集</a>
         <button class="small" id="teamsReload">再読込</button>
@@ -215,10 +215,9 @@
         <span class="hint" id="teamsStatus" style="margin:0"></span>
       </div>
       <div class="tablewrap"><table class="teams" id="teamTable">
-        <thead><tr><th style="width:36px">#</th><th>チーム名（出力に使う表記）</th><th>所属リーグ</th><th>Opta表記（英語名。; 区切りで複数可）</th><th>出どころ</th></tr></thead>
+        <thead><tr><th style="width:36px">#</th><th>チーム名（出力に使う表記）</th><th>所属リーグ</th><th>Opta表記（英語名。; 区切りで複数可）</th></tr></thead>
         <tbody id="teamRows"></tbody>
       </table></div>
-      <div class="hint">「出どころ」: <b>シート</b>＝共有シートのOpta表記を使用（優先）／<b>内蔵</b>＝シートに英語名が無いのでアプリ内蔵の対応表で補っている／<b>未対応</b>＝どちらにも英語名が無く、このクラブは英語のまま出力される（シートのOpta表記に書き足してください）</div>
     </div>
   </div>
 </div>
@@ -916,15 +915,13 @@ function renderTeamTable(){
   const tb = $("teamRows"); if (!tb) return;
   const rows = teamTableRows($("teamsLeague").value);
   tb.innerHTML = "";
-  const label = { sheet: "シート", builtin: "内蔵", none: "未対応" };
   rows.forEach((r, i) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${i + 1}</td><td>${esc(r.name)}</td><td>${esc(r.league)}</td><td>${esc(r.opta) || "<span style='color:var(--warn)'>（なし）</span>"}</td><td><span class="src ${r.src}">${label[r.src]}</span></td>`;
+    tr.innerHTML = `<td>${i + 1}</td><td>${esc(r.name)}</td><td>${esc(r.league)}</td><td>${esc(r.opta) || "<span style='color:var(--warn)'>（なし）</span>"}</td>`;
     tb.appendChild(tr);
   });
-  const n = { sheet: 0, builtin: 0, none: 0 }; rows.forEach(r => n[r.src]++);
   $("teamsStatus").textContent = dictState.ok
-    ? `${rows.length}クラブ（シート優先 ${n.sheet}／内蔵で補完 ${n.builtin}／未対応 ${n.none}）` + (dictState.loadedAt ? `・共有シート読込 ${dictState.loadedAt.toLocaleTimeString("ja-JP")}` : "")
+    ? `${rows.length}クラブ` + (dictState.loadedAt ? `・共有シート読込 ${dictState.loadedAt.toLocaleTimeString("ja-JP")}` : "")
     : `共有シートを読み込めていません（${dictState.error || "読込中"}）。内蔵の対応表だけを表示しています`;
 }
 (function initTeams(){

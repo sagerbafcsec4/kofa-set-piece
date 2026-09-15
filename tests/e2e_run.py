@@ -107,7 +107,6 @@ UNIT_JS = r"""
   // チーム一覧タブ
   const tt = KSP.teamTableRows("ラ・リーガ");
   t("チーム一覧 ラ・リーガ20行", tt.length === 20 && tt.every(r => r.opta), tt.length);
-  t("チーム一覧 出どころはシート優先", tt.filter(r => r.src === "sheet").length === 20, JSON.stringify(tt.map(r=>r.src)));
   document.querySelector('.tab[data-page="teams"]').click();
   t("チーム一覧タブに切り替わる", document.querySelector("#page-teams").classList.contains("active") && document.querySelectorAll("#teamRows tr").length >= 58, document.querySelectorAll("#teamRows tr").length);
   t("シートを開くボタン", /docs\.google\.com\/spreadsheets/.test(document.querySelector("#page-teams a.zipbtn").href), document.querySelector("#page-teams a.zipbtn").href);
