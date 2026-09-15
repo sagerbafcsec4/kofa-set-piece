@@ -68,6 +68,11 @@ UNIT_JS = r"""
   t("日本語化 大小無視", ls.rows.some(r => r.name === "レアル・マドリー"), ls.rows.map(r=>r.name).join("|"));
   t("未登録は英語のまま＋一覧", ls.unknown.length === 1 && ls.unknown[0] === "Unknown FC" && ls.rows[0].name === "Unknown FC", JSON.stringify(ls.unknown));
   t("並び SP降順→Total降順→名前昇順", ls.rows.map(r=>r.name).join("|") === "Unknown FC|アトレティコ・デ・マドリー|ベティス|レアル・マドリー", ls.rows.map(r=>r.name).join("|"));
+  // 表題の注記（自由文言）
+  const wbT = KSP.buildWorkbook({ goals: [rowsIn[1]], conceded: [rowsIn[1]], league: "ラ・リーガ", season: "2026/27", matchday: 5, titleNote: "第5節終了時暫定" });
+  t("表題の注記を自由に書ける", wbT.ws.getCell(1,1).value === "セットプレーからの得点数 (Opta) ※第5節終了時暫定" && wbT.ws.getCell(5,1).value === "セットプレーからの失点数 (Opta) ※第5節終了時暫定", wbT.ws.getCell(1,1).value);
+  const wbD = KSP.buildWorkbook({ goals: [rowsIn[1]], conceded: [rowsIn[1]], league: "ラ・リーガ", season: "2026/27", matchday: 5 });
+  t("注記が空なら節から自動", wbD.ws.getCell(1,1).value === "セットプレーからの得点数 (Opta) ※第5節終了時", wbD.ws.getCell(1,1).value);
   // makeFileName
   t("ファイル名", KSP.makeFileName("ラ・リーガ","2026/27",5) === "ラ・リーガ_セットプレー情報_2026-27_第5節.xlsx", KSP.makeFileName("ラ・リーガ","2026/27",5));
   return out;
