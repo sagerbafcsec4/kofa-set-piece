@@ -149,7 +149,7 @@
     <div id="dl"></div>
     <div id="checks"></div>
     <details class="detail" id="detail"><summary>処理の詳細を表示</summary><div id="log"></div></details>
-    <div class="safe">やるのは、Optaの数値を並べ替えて日本語のクラブ名に置き換え、割合を「％」の形にすることだけです。<b>数値そのものは変えません</b>（出来上がったExcelの合計を元ファイルと自動照合します）。処理はすべてブラウザ内で完結し、<b>Optaのファイルは外部送信されません</b>。読みに行くのはチーム名辞書（Googleスプレッドシートの公開CSV）だけです。</div>
+    <div class="safe">やるのは、Optaの数値を並べ替えて日本語のクラブ名に置き換え、割合を「％」の形にすることだけです。<b>数値そのものは変えません</b>（出来上がった表の<b>全セル</b>を元ファイルの値と1つずつ自動照合し、1か所でも違えばファイルを出しません）。処理はすべてブラウザ内で完結し、<b>Optaのファイルは外部送信されません</b>。読みに行くのはチーム名辞書（Googleスプレッドシートの公開CSV）だけです。</div>
   </div>
 </div>
 
@@ -297,6 +297,40 @@ function parseOptaRows(ws){
   }
   if (!rows.length) throw new AppError("データ行がありません（2行目以降が空です）");
   return rows;
+}
+// 全セル照合用: 元シートを parseOptaRows とは別経路で読み直し、Team Name → 各列の生の値 を返す
+function readOptaMatrix(ws){
+  const col = {};
+  ws.getRow(1).eachCell({ includeEmpty: false }, (c, i) => { const k = normHeader(cellText(c)); if (k && !(k in col)) col[k] = i; });
+  const out = new Map();
+  for (let r = 2; r <= ws.rowCount; r++) {
+    const row = ws.getRow(r);
+    const team = cellText(row.getCell(col[OPTA_COLS.team]));
+    if (!team) continue;
+    const rec = {};
+    for (const key of ["setPiece","penalty","corner","direct","indirect","throwIn","setPiecePct"]) rec[key] = cellNumber(row.getCell(col[OPTA_COLS[key]]));
+    out.set(normKey(team), rec);
+  }
+  return out;
+}
+// 出来上がった表の本文（8列×全行）を、元シートの値と1セルずつ突き合わせる。戻り値 {total, ok, bad:[...]}
+function compareAllCells(ws, first, last, sortedRows, srcMatrix){
+  const keys = ["setPiece","penalty","corner","direct","indirect","throwIn","setPiecePct"];
+  const bad = []; let total = 0;
+  for (let i = 0; i < sortedRows.length; i++) {
+    const r = first + i; const rec = sortedRows[i]; const src = srcMatrix.get(normKey(rec.team));
+    total++;
+    if (String(ws.getCell(r, 1).value) !== rec.name) bad.push(`A${r}: 「${ws.getCell(r, 1).value}」≠「${rec.name}」`);
+    for (let k = 0; k < keys.length; k++) {
+      total++;
+      const got = Number(ws.getCell(r, k + 2).value);
+      let exp = src ? src[keys[k]] : NaN;
+      if (keys[k] === "setPiecePct") exp = Math.round(exp * 100) / 10000;   // 元は100倍値
+      if (!src || !Number.isFinite(got) || Math.abs(got - exp) > 1e-9) bad.push(`${String.fromCharCode(65 + k + 1)}${r}（${rec.team}）: ${got} ≠ 元 ${exp}`);
+    }
+  }
+  if (last !== first + sortedRows.length - 1) bad.push(`行数が合いません（表 ${last - first + 1} 行／元 ${sortedRows.length} 行）`);
+  return { total, ok: bad.length === 0, bad };
 }
 // parseOptaRows とは独立に、指定ヘッダの列を直接足す（合計照合用）
 function sumOptaColumn(ws, header){
@@ -484,7 +518,7 @@ function buildWorkbook({ goals, conceded, league, season, matchday, provisional 
 // ====================================================================
 // 検証（実行後に結果欄へ出す）
 // ====================================================================
-function verify({ league, goalsRows, concededRows, goalsSrcSum, concededSrcSum, unknownG, unknownC, dictInfo, ws, layout }){
+function verify({ league, goalsRows, concededRows, goalsSrcSum, concededSrcSum, unknownG, unknownC, dictInfo, ws, layout, goalsSorted, concededSorted, srcG, srcC }){
   const checks = [], warnings = [];
   const lg = LEAGUE_OPTIONS.find(o => o.label === league); const expected = lg ? lg.teams : null;
   const cntOk = expected == null || (goalsRows.length === expected && concededRows.length === expected);
@@ -501,12 +535,21 @@ function verify({ league, goalsRows, concededRows, goalsSrcSum, concededSrcSum, 
   const sumOk = outG === goalsSrcSum && outC === concededSrcSum;
   checks.push({ ok: sumOk, label: "Total の合計が元ファイルと一致", detail: `得点 ${outG}（元 ${goalsSrcSum}）／ 失点 ${outC}（元 ${concededSrcSum}）` });
   if (!sumOk) warnings.push("出来上がった表の合計が元ファイルと一致しません。このファイルは使わず、ページを再読み込みしてやり直してください。");
+  // 全セル照合: 本文の全セル（クラブ名＋数値7列）を元ファイルの値と1つずつ突き合わせる
+  const cmpG = compareAllCells(ws, layout.goals.first, layout.goals.last, goalsSorted, srcG);
+  const cmpC = compareAllCells(ws, layout.conceded.first, layout.conceded.last, concededSorted, srcC);
+  const allOk = cmpG.ok && cmpC.ok;
+  const nAll = cmpG.total + cmpC.total;
+  checks.push({ ok: allOk, label: "全セル照合（元ファイルの値と1つずつ突き合わせ）", detail: allOk ? `${nAll}／${nAll} セル一致` : `${nAll - cmpG.bad.length - cmpC.bad.length}／${nAll} 一致・不一致 ${cmpG.bad.length + cmpC.bad.length} 件（処理の詳細に一覧）` });
+  if (!allOk) warnings.push("出来上がった表に、元ファイルと違う値のセルがあります。安全のためファイルを出力しませんでした。「処理の詳細を表示」に不一致の一覧があります。");
+  const fatal = !sumOk || !allOk;
+  const badCells = [...cmpG.bad.map(b => "得点表 " + b), ...cmpC.bad.map(b => "失点表 " + b)];
   const unknown = [...new Set([...unknownG, ...unknownC])];
   checks.push({ ok: !unknown.length, label: "クラブ名の日本語化", detail: unknown.length ? `未登録 ${unknown.length}件（英語のまま出力）` : "全クラブ日本語化" });
   if (unknown.length) warnings.push("対応表に無いクラブがあり英語のまま出力しました。共有シートの該当クラブの「Opta表記」欄に次の英語名をそのまま書くか、Claudeに内蔵表への追加を頼んでください: " + unknown.join(" / "));
   if (dictInfo.duplicates.length) warnings.push("同じOpta表記が複数クラブに登録されています（共有シートを確認してください）: " + dictInfo.duplicates.join(" / "));
   if (dictInfo.sheetSkipped) warnings.push("共有シートを読み込めなかったため、内蔵の対応表だけで処理しました。");
-  return { checks, warnings, fatal: !sumOk };
+  return { checks, warnings, fatal, badCells };
 }
 
 // ====================================================================
@@ -613,10 +656,12 @@ runBtn.onclick = async () => {
     const { wb, ws, layout } = buildWorkbook({ goals: goals.rows, conceded: conceded.rows, league, season, matchday, provisional });
     const v = verify({ league, goalsRows: rawG, concededRows: rawC,
       goalsSrcSum: sumOptaColumn(wsG, OPTA_COLS.setPiece), concededSrcSum: sumOptaColumn(wsC, OPTA_COLS.setPiece),
-      unknownG: goals.unknown, unknownC: conceded.unknown, dictInfo, ws, layout });
+      unknownG: goals.unknown, unknownC: conceded.unknown, dictInfo, ws, layout,
+      goalsSorted: goals.rows, concededSorted: conceded.rows, srcG: readOptaMatrix(wsG), srcC: readOptaMatrix(wsC) });
     renderChecks(v.checks);
     v.checks.forEach(c => log(`${c.ok ? "✔" : "✘"} ${c.label}: ${c.detail}`));
-    if (v.fatal) throw new AppError("合計の照合に失敗したため、ファイルを出力しませんでした。");
+    if (v.badCells && v.badCells.length) log("不一致セル:\n  " + v.badCells.join("\n  "));
+    if (v.fatal) throw new AppError("元ファイルとの照合に失敗したため、ファイルを出力しませんでした（数値は一切書き換えていません。ページを再読み込みしてやり直してください）。");
     const name = makeFileName(league, season, matchday, provisional);
     download(name, await wb.xlsx.writeBuffer());
     log("出力: " + name + "（シート「" + ws.name + "」）");
@@ -638,7 +683,7 @@ runBtn.onclick = async () => {
 };
 
 // テストから直接叩けるように純関数を公開
-window.KSP = { parseCSV, parseOptaRows, buildDictionary, localizeAndSort, buildWorkbook, verify, makeFileName, normKey, LEAGUE_OPTIONS, STYLE, OUT_HEADERS, BUILTIN_DICT };
+window.KSP = { parseCSV, parseOptaRows, buildDictionary, localizeAndSort, buildWorkbook, verify, makeFileName, normKey, compareAllCells, LEAGUE_OPTIONS, STYLE, OUT_HEADERS, BUILTIN_DICT };
 </script>
 </body>
 </html>
