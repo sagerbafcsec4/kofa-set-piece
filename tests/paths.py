@@ -18,3 +18,7 @@ EXPECTED_FILENAME = "ラ・リーガ_セットプレー情報_2026-27_第5節.xl
 
 SHEET_CSV = ("https://docs.google.com/spreadsheets/d/e/2PACX-1vRfxZY4XyfVh5oL7Fk8nTF1wdhDdzcscTlL1ZTVpu2P2hJ_kg-abbu4HFziWrgkRRuTL-Q_TLxzFrlc"
              "/pub?gid=0&single=true&output=csv")
+
+# 色付けテスト用の対戦（ホーム, アウェイ）。色はアプリ既定（試合1: 黄・黄緑／試合2: ピンク・青）
+TEST_MATCHES = [("アラベス", "バレンシア"), ("レアル・マドリー", "エルチェ")]
+TEST_MATCH_COLORS = [("FFFFFF00", "FF92D050"), ("FFFF9999", "FFB4C6E7")]

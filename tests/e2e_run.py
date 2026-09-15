@@ -82,6 +82,28 @@ UNIT_JS = r"""
   wbV.ws.getCell(3, 4).value = 9;   // Corners を書き換え
   const cmpNg = KSP.compareAllCells(wbV.ws, 3, 3, okRow, srcM);
   t("全セル照合 1セルの改変を検知", !cmpNg.ok && cmpNg.bad.length === 1 && /D3/.test(cmpNg.bad[0]), JSON.stringify(cmpNg.bad));
+  // まとめて貼り付け（区切り: 空白 / vs / -）。matchList を直接使うので前後で空にする
+  KSP.matchList.length = 0;
+  document.querySelector("#league").value = "ラ・リーガ";   // 貼り付けは画面で選んだリーグの登録名で照合する
+  const imp = KSP.importPastedMatches("アラベス バレンシア\nレアル・マドリー vs エルチェ\nバルセロナ - ラシン・サンタンデール\n知らないFC セビージャ");
+  t("貼り付け 取り込み数", imp.added === 4 && KSP.matchList.length === 4, JSON.stringify(imp));
+  t("貼り付け 区切り3種", KSP.matchList[0].home === "アラベス" && KSP.matchList[0].away === "バレンシア" && KSP.matchList[1].away === "エルチェ" && KSP.matchList[2].away === "ラシン・サンタンデール", JSON.stringify(KSP.matchList.map(m => [m.home, m.away])));
+  t("貼り付け 一致しない名前は空欄＋報告", KSP.matchList[3].home === "" && KSP.matchList[3].away === "セビージャ" && imp.miss.length === 1, JSON.stringify(imp.miss));
+  t("貼り付け 既定の色は試合順（黄・黄緑／ピンク・青）", KSP.matchList[0].homeColor === "yellow" && KSP.matchList[0].awayColor === "lime" && KSP.matchList[1].homeColor === "pink" && KSP.matchList[1].awayColor === "blue", JSON.stringify(KSP.matchList.map(m => [m.homeColor, m.awayColor])));
+  KSP.matchList.length = 0;
+  // 色付け付きのブック: 2試合→表2組・該当行だけ塗り＋太字
+  const rows2 = [
+    {team:"Sevilla", name:"セビージャ", setPiece:4, total:9, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.5},
+    {team:"Real Madrid", name:"レアル・マドリー", setPiece:3, total:14, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.2},
+    {team:"Elche", name:"エルチェ", setPiece:1, total:5, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.1},
+  ];
+  const wbH = KSP.buildWorkbook({ goals: rows2, conceded: rows2, league: "ラ・リーガ", season: "2026/27", matchday: 5,
+    matches: [{home:"セビージャ", away:"エルチェ", homeColor:"FFFFFF00", awayColor:"FF92D050"}, {home:"レアル・マドリー", away:"エルチェ", homeColor:"FFFF9999", awayColor:"FFB4C6E7"}] });
+  const fillOf = (r, c) => (wbH.ws.getCell(r, c).fill && wbH.ws.getCell(r, c).fill.fgColor) ? wbH.ws.getCell(r, c).fill.fgColor.argb : null;
+  t("色付け 表が2組（J列に2組目）", wbH.ws.getCell(1, 10).value === wbH.ws.getCell(1, 1).value && wbH.layout.blocks.length === 2, wbH.ws.getCell(1, 10).value);
+  t("色付け 1組目: セビージャ黄・エルチェ黄緑・レアル無色", fillOf(3, 1) === "FFFFFF00" && fillOf(3, 8) === "FFFFFF00" && fillOf(5, 1) === "FF92D050" && fillOf(4, 1) === null && wbH.ws.getCell(3, 1).font.bold === true && wbH.ws.getCell(4, 1).font.bold === false, JSON.stringify([fillOf(3,1), fillOf(4,1), fillOf(5,1)]));
+  t("色付け 2組目: レアルピンク・エルチェ青・セビージャ無色", fillOf(4, 10) === "FFFF9999" && fillOf(5, 10) === "FFB4C6E7" && fillOf(3, 10) === null, JSON.stringify([fillOf(3,10), fillOf(4,10), fillOf(5,10)]));
+  t("色付け 失点表にも同じ色", fillOf(9, 1) === "FFFFFF00" && fillOf(10, 10) === "FFFF9999", JSON.stringify([fillOf(9,1), fillOf(10,10)]));
   // makeFileName
   t("ファイル名", KSP.makeFileName("ラ・リーガ","2026/27",5) === "ラ・リーガ_セットプレー情報_2026-27_第5節.xlsx", KSP.makeFileName("ラ・リーガ","2026/27",5));
   t("ファイル名（暫定）", KSP.makeFileName("ラ・リーガ","2026/27",5,true) === "ラ・リーガ_セットプレー情報_2026-27_第5節暫定.xlsx", KSP.makeFileName("ラ・リーガ","2026/27",5,true));
@@ -133,28 +155,44 @@ def main():
             page.fill("#matchday", str(paths.MATCHDAY))
             page.wait_for_function("!document.querySelector('#run').disabled", timeout=40000)
             print("辞書:", page.inner_text("#dictStatus").strip())
-            with page.expect_download(timeout=60000) as dl:
-                page.click("#run")
-            d = dl.value
-            name = d.suggested_filename
-            print("ダウンロード名:", name)
-            out_path = os.path.join(paths.OUT_DIR, name)
-            d.save_as(out_path)
-            page.wait_for_selector("#summary:not(:empty)", timeout=10000)
-            print("要約:", page.inner_text("#summary").strip())
-            print("照合表:\n" + page.inner_text("#checks").strip())
-            w = page.inner_text("#warnings").strip()
-            if w:
-                print("警告:\n" + w)
+
+            def run_once(label):
+                with page.expect_download(timeout=60000) as dl:
+                    page.click("#run")
+                d = dl.value
+                name = d.suggested_filename
+                out_path = os.path.join(paths.OUT_DIR, label + "_" + name)
+                d.save_as(out_path)
+                page.wait_for_selector("#summary:not(:empty)", timeout=10000)
+                print(f"[{label}] ダウンロード名: {name}")
+                print(f"[{label}] 要約: " + page.inner_text("#summary").strip())
+                print(f"[{label}] 照合表:\n" + page.inner_text("#checks").strip())
+                w = page.inner_text("#warnings").strip()
+                if w:
+                    print(f"[{label}] 警告:\n" + w)
+                return name, out_path
+
+            # 1回目: 色付けなし
+            name, out_path = run_once("plain")
+            # 2回目: 色付けON → まとめて貼り付けで2試合
+            page.check("#useHighlight")
+            page.click("#clearMatches")
+            page.fill("#pasteMatches", "\n".join(f"{h} {a}" for h, a in paths.TEST_MATCHES))
+            page.click("#importMatches")
+            print("貼り付け:", page.inner_text("#pasteResult").strip())
+            page.wait_for_function("!document.querySelector('#run').disabled", timeout=10000)
+            name_hl, out_hl = run_once("highlight")
             if errors:
                 print("ブラウザのエラー:", errors)
             page.screenshot(path=os.path.join(paths.OUT_DIR, "screenshot.png"), full_page=True)
             browser.close()
-        name_ok = name == paths.EXPECTED_FILENAME
-        print(("✔" if name_ok else "✘") + " ファイル名が期待どおり", name, "/ 期待:", paths.EXPECTED_FILENAME)
+        name_ok = name == paths.EXPECTED_FILENAME and name_hl == paths.EXPECTED_FILENAME
+        print(("✔" if name_ok else "✘") + " ファイル名が期待どおり", name, "/", name_hl, "/ 期待:", paths.EXPECTED_FILENAME)
         ok, text = verify_output.verify(out_path)
-        print(text)
-        rc = 0 if (ok and name_ok and unit_ok and not errors) else 1
+        print("=== 色付けなし ===\n" + text)
+        ok2, text2 = verify_output.verify(out_hl, matches=paths.TEST_MATCHES, match_colors=paths.TEST_MATCH_COLORS)
+        print("=== 色付けあり（2試合） ===\n" + text2)
+        rc = 0 if (ok and ok2 and name_ok and unit_ok and not errors) else 1
     finally:
         server.terminate()
     print("RESULT:", "PASS" if rc == 0 else "FAIL")

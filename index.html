@@ -61,6 +61,15 @@
   .hint{ font-size:.8rem; color:var(--muted); margin:4px 0 0; }
   .dateinput{ font:inherit; font-size:14px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); accent-color:var(--p1); width:100%; }
   .dateinput:disabled{ background:#f3f3f7; color:#a7adba; cursor:not-allowed; }
+  .setq{ font-weight:700; font-size:.92rem; margin:0 0 8px; }
+  label.chk{ display:flex; align-items:center; gap:9px; font-size:.95rem; cursor:pointer; }
+  label.chk input{ width:17px; height:17px; accent-color:var(--p1); }
+  table.matches{ border-collapse:collapse; width:100%; font-size:.9rem; }
+  table.matches th{ text-align:left; font-weight:700; color:var(--muted); font-size:.82rem; padding:4px 6px; border-bottom:1px solid var(--line); }
+  table.matches td{ padding:5px 6px; border-bottom:1px solid #eef0f4; vertical-align:middle; }
+  table.matches select{ width:100%; font:inherit; font-size:13.5px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+  table.matches .sw{ display:inline-block; width:14px; height:14px; border-radius:3px; border:1px solid #94a3b8; vertical-align:-2px; margin-right:4px; }
+  textarea.dateinput{ resize:vertical; font-family:inherit; }
   .dict{ margin-top:14px; padding:10px 12px; border-radius:10px; font-size:.86rem; background:var(--soft); border:1px solid var(--line); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .dict.bad{ background:#fdecec; border-color:#f3b4b4; color:#9b1c1c; }
   .summary{ font-size:.98rem; font-weight:700; margin:2px 0 10px; }
@@ -132,6 +141,30 @@
       </div>
       <div class="dict" id="dictStatus"><span class="spin"></span> チーム名辞書を読み込み中…</div>
       <div class="hint">クラブ名は、アプリ内蔵の対応表（Optaの英語名→日本語名）で日本語にします。Excelフォーマット作成アプリと同じ共有スプレッドシートに「Opta表記」列があれば、そちらの登録を優先します。対応表に無いクラブは英語のまま出力し、結果欄でお知らせします。</div>
+    </div>
+
+    <div class="setblock">
+      <div class="setblock-title"><span class="dot"></span>対戦チームの色付け</div>
+      <div class="setq">特定のチームに色付けをつけますか？</div>
+      <label class="chk"><input id="useHighlight" type="checkbox"> 色付けする（試合ごとに表を右へ複製し、その試合の2チームの行を塗り＋太字にする）</label>
+      <div id="hlOpts" style="display:none; margin-top:12px;">
+        <table class="matches" id="matchTable">
+          <thead><tr><th style="width:36px">#</th><th>ホーム</th><th style="width:110px">色</th><th>アウェイ</th><th style="width:110px">色</th><th style="width:40px"></th></tr></thead>
+          <tbody id="matchRows"></tbody>
+        </table>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+          <button class="small" id="addMatch">＋ 試合を追加</button>
+          <button class="small" id="clearMatches">すべて消す</button>
+          <span class="hint" id="matchProblem" style="margin:0; color:var(--warn)"></span>
+        </div>
+        <div class="setq" style="margin-top:14px;">まとめて貼り付け（1行に1試合。「ホーム アウェイ」を空白・タブ・vs・- のどれかで区切る）</div>
+        <textarea id="pasteMatches" class="dateinput" rows="4" placeholder="例:&#10;アラベス バレンシア&#10;レアル・マドリー vs エルチェ&#10;バルセロナ - ラシン・サンタンデール"></textarea>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:6px;">
+          <button class="small" id="importMatches">貼り付けた内容を取り込む</button>
+          <span class="hint" id="pasteResult" style="margin:0"></span>
+        </div>
+        <div class="hint">クラブ名は選んだリーグの登録名（日本語）と完全一致したものだけ自動で入ります。一致しない名前は空欄になるので、プルダウンで選び直してください。</div>
+      </div>
     </div>
   </div>
 
@@ -313,20 +346,22 @@ function readOptaMatrix(ws){
   }
   return out;
 }
+// 列番号 → 列の文字（1→A, 27→AA）
+function colLetter(n){ let s = ""; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
 // 出来上がった表の本文（8列×全行）を、元シートの値と1セルずつ突き合わせる。戻り値 {total, ok, bad:[...]}
-function compareAllCells(ws, first, last, sortedRows, srcMatrix){
+function compareAllCells(ws, first, last, sortedRows, srcMatrix, off = 0){
   const keys = ["setPiece","penalty","corner","direct","indirect","throwIn","setPiecePct"];
   const bad = []; let total = 0;
   for (let i = 0; i < sortedRows.length; i++) {
     const r = first + i; const rec = sortedRows[i]; const src = srcMatrix.get(normKey(rec.team));
     total++;
-    if (String(ws.getCell(r, 1).value) !== rec.name) bad.push(`A${r}: 「${ws.getCell(r, 1).value}」≠「${rec.name}」`);
+    if (String(ws.getCell(r, off + 1).value) !== rec.name) bad.push(`${colLetter(off + 1)}${r}: 「${ws.getCell(r, off + 1).value}」≠「${rec.name}」`);
     for (let k = 0; k < keys.length; k++) {
       total++;
-      const got = Number(ws.getCell(r, k + 2).value);
+      const got = Number(ws.getCell(r, off + k + 2).value);
       let exp = src ? src[keys[k]] : NaN;
       if (keys[k] === "setPiecePct") exp = Math.round(exp * 100) / 10000;   // 元は100倍値
-      if (!src || !Number.isFinite(got) || Math.abs(got - exp) > 1e-9) bad.push(`${String.fromCharCode(65 + k + 1)}${r}（${rec.team}）: ${got} ≠ 元 ${exp}`);
+      if (!src || !Number.isFinite(got) || Math.abs(got - exp) > 1e-9) bad.push(`${colLetter(off + k + 2)}${r}（${rec.team}）: ${got} ≠ 元 ${exp}`);
     }
   }
   if (last !== first + sortedRows.length - 1) bad.push(`行数が合いません（表 ${last - first + 1} 行／元 ${sortedRows.length} 行）`);
@@ -378,7 +413,7 @@ async function loadTeamSheet(){
   } catch (e) {
     dictState.error = (e && e.name === "AbortError") ? "時間切れ（15秒）" : String(e && e.message || e);
   } finally { clearTimeout(timer); dictState.loading = false; }
-  renderDictStatus(); updateRun();
+  renderDictStatus(); renderMatches(); updateRun();
 }
 function findCol(header, ...keys){
   for (let i = 0; i < header.length; i++) { if (keys.some(k => header[i].includes(k))) return i; }
@@ -466,53 +501,68 @@ function applyStyle(cell, s){
   if (s.numFmt) cell.numFmt = s.numFmt;
 }
 function fontSize(col){ return col <= STYLE.bigCols ? 12 : 11; }
-// 表題（結合）＋見出し＋本文を書き、本文の最終行番号を返す
-function writeTable(ws, startRow, title, rows, isSecond){
+// 表題（結合）＋見出し＋本文を書き、本文の最終行番号を返す。
+// off = 列のずらし幅（0 なら A〜H、9 なら J〜Q …）。highlight = Map(日本語名 → 塗り色ARGB) で該当行を塗り＋太字
+function writeTable(ws, startRow, title, rows, isSecond, off = 0, highlight = null){
   const r0 = startRow, r1 = startRow + 1;
+  const C = c => off + c;
   // --- 表題行（A:H 結合・薄灰・黒太字・四方 medium）
   ws.getRow(r0).height = isSecond ? STYLE.rowH.title2 : STYLE.rowH.title;
-  ws.getCell(r0, 1).value = title;
-  if (typeof ws.mergeCellsWithoutStyle === "function") ws.mergeCellsWithoutStyle(r0, 1, r0, NCOL); else ws.mergeCells(r0, 1, r0, NCOL);
+  ws.getCell(r0, C(1)).value = title;
+  if (typeof ws.mergeCellsWithoutStyle === "function") ws.mergeCellsWithoutStyle(r0, C(1), r0, C(NCOL)); else ws.mergeCells(r0, C(1), r0, C(NCOL));
   for (let c = 1; c <= NCOL; c++) {
-    applyStyle(ws.getCell(r0, c), { size: 12, bold: true, fill: STYLE.titleFill,
+    applyStyle(ws.getCell(r0, C(c)), { size: 12, bold: true, fill: STYLE.titleFill,
       border: borderOf("medium", "medium", c === 1 ? "medium" : null, c === NCOL ? "medium" : null) });
   }
   // --- 見出し行（黒背景・白太字・上 medium・内側 thin）
   ws.getRow(r1).height = STYLE.rowH.head;
   for (let c = 1; c <= NCOL; c++) {
-    const cell = ws.getCell(r1, c); cell.value = OUT_HEADERS[c - 1];
+    const cell = ws.getCell(r1, C(c)); cell.value = OUT_HEADERS[c - 1];
     applyStyle(cell, { size: fontSize(c), bold: true, color: STYLE.white, fill: STYLE.headFill, wrap: true,
       border: borderOf("medium", "thin", c === 1 ? "medium" : "thin", c === NCOL ? "medium" : "thin"),
       numFmt: c === NCOL ? "@" : null });
   }
-  // --- 本文
+  // --- 本文（色付け対象のクラブは塗り＋太字）
   const last = r1 + rows.length;
   rows.forEach((rec, i) => {
     const r = r1 + 1 + i; const isLast = r === last;
     ws.getRow(r).height = STYLE.rowH.body;
+    const hl = highlight ? highlight.get(rec.name) : null;
     const vals = [rec.name, rec.setPiece, rec.penalty, rec.corner, rec.direct, rec.indirect, rec.throwIn, rec.setPiecePct];
     for (let c = 1; c <= NCOL; c++) {
-      const cell = ws.getCell(r, c); cell.value = vals[c - 1];
-      applyStyle(cell, { size: fontSize(c),
+      const cell = ws.getCell(r, C(c)); cell.value = vals[c - 1];
+      applyStyle(cell, { size: fontSize(c), bold: !!hl, fill: hl || null,
         border: borderOf("thin", isLast ? "medium" : "thin", c === 1 ? "medium" : "thin", c === NCOL ? "medium" : "thin"),
         numFmt: c === NCOL ? "0.00%" : null });
     }
   });
   return last;
 }
-function buildWorkbook({ goals, conceded, league, season, matchday, provisional }){
+// 表のブロック幅（8列＋空き1列）
+const BLOCK_STRIDE = NCOL + 1;
+// matches = [{home, away, homeColor(ARGB), awayColor(ARGB)}] 。空なら表は1ブロック（色付けなし）
+function buildWorkbook({ goals, conceded, league, season, matchday, provisional, matches }){
   const note = `第${matchday}節終了時` + (provisional ? "暫定" : "");
   const wb = new ExcelJS.Workbook();
   wb.creator = "kofa-set-piece"; wb.created = new Date();
   const ws = wb.addWorksheet(`${matchday}節用セットプレー`);
-  STYLE.colWidths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
-  const end1 = writeTable(ws, 1, `セットプレーからの得点数 (Opta) ※${note}`, goals, false);
-  const gap = end1 + 1;
-  ws.getRow(gap).height = STYLE.rowH.gap;
-  for (let c = 1; c <= NCOL; c++) applyStyle(ws.getCell(gap, c), { size: fontSize(c) });
-  const start2 = gap + 1;
-  const end2 = writeTable(ws, start2, `セットプレーからの失点数 (Opta) ※${note}`, conceded, true);
-  return { wb, ws, layout: { goals: { title: 1, head: 2, first: 3, last: end1 }, gap, conceded: { title: start2, head: start2 + 1, first: start2 + 2, last: end2 } } };
+  const blocksDef = (matches && matches.length) ? matches : [null];
+  const blocks = [];
+  blocksDef.forEach((m, b) => {
+    const off = b * BLOCK_STRIDE;
+    STYLE.colWidths.forEach((w, i) => { ws.getColumn(off + i + 1).width = w; });
+    if (b > 0) ws.getColumn(off).width = 13;   // ブロック間の空き列
+    const hl = m ? new Map([[m.home, m.homeColor], [m.away, m.awayColor]]) : null;
+    const end1 = writeTable(ws, 1, `セットプレーからの得点数 (Opta) ※${note}`, goals, false, off, hl);
+    const gap = end1 + 1;
+    ws.getRow(gap).height = STYLE.rowH.gap;
+    for (let c = 1; c <= NCOL; c++) applyStyle(ws.getCell(gap, off + c), { size: fontSize(c) });
+    const start2 = gap + 1;
+    const end2 = writeTable(ws, start2, `セットプレーからの失点数 (Opta) ※${note}`, conceded, true, off, hl);
+    blocks.push({ off, match: m, goals: { title: 1, head: 2, first: 3, last: end1 }, gap, conceded: { title: start2, head: start2 + 1, first: start2 + 2, last: end2 } });
+  });
+  const layout = Object.assign({}, blocks[0], { blocks });
+  return { wb, ws, layout };
 }
 
 // ====================================================================
@@ -535,15 +585,25 @@ function verify({ league, goalsRows, concededRows, goalsSrcSum, concededSrcSum, 
   const sumOk = outG === goalsSrcSum && outC === concededSrcSum;
   checks.push({ ok: sumOk, label: "Total の合計が元ファイルと一致", detail: `得点 ${outG}（元 ${goalsSrcSum}）／ 失点 ${outC}（元 ${concededSrcSum}）` });
   if (!sumOk) warnings.push("出来上がった表の合計が元ファイルと一致しません。このファイルは使わず、ページを再読み込みしてやり直してください。");
-  // 全セル照合: 本文の全セル（クラブ名＋数値7列）を元ファイルの値と1つずつ突き合わせる
-  const cmpG = compareAllCells(ws, layout.goals.first, layout.goals.last, goalsSorted, srcG);
-  const cmpC = compareAllCells(ws, layout.conceded.first, layout.conceded.last, concededSorted, srcC);
-  const allOk = cmpG.ok && cmpC.ok;
-  const nAll = cmpG.total + cmpC.total;
-  checks.push({ ok: allOk, label: "全セル照合（元ファイルの値と1つずつ突き合わせ）", detail: allOk ? `${nAll}／${nAll} セル一致` : `${nAll - cmpG.bad.length - cmpC.bad.length}／${nAll} 一致・不一致 ${cmpG.bad.length + cmpC.bad.length} 件（処理の詳細に一覧）` });
+  // 全セル照合: 本文の全セル（クラブ名＋数値7列）を元ファイルの値と1つずつ突き合わせる（複製した表も全ブロック）
+  const blocks = layout.blocks || [layout];
+  let nAll = 0, nBad = 0; const badCells = [];
+  blocks.forEach((bk, i) => {
+    const tag = blocks.length > 1 ? `表${i + 1} ` : "";
+    const cmpG = compareAllCells(ws, bk.goals.first, bk.goals.last, goalsSorted, srcG, bk.off || 0);
+    const cmpC = compareAllCells(ws, bk.conceded.first, bk.conceded.last, concededSorted, srcC, bk.off || 0);
+    nAll += cmpG.total + cmpC.total; nBad += cmpG.bad.length + cmpC.bad.length;
+    badCells.push(...cmpG.bad.map(b => tag + "得点表 " + b), ...cmpC.bad.map(b => tag + "失点表 " + b));
+  });
+  const allOk = nBad === 0;
+  checks.push({ ok: allOk, label: "全セル照合（元ファイルの値と1つずつ突き合わせ）", detail: allOk ? `${nAll}／${nAll} セル一致` + (blocks.length > 1 ? `（表 ${blocks.length} 組）` : "") : `${nAll - nBad}／${nAll} 一致・不一致 ${nBad} 件（処理の詳細に一覧）` });
   if (!allOk) warnings.push("出来上がった表に、元ファイルと違う値のセルがあります。安全のためファイルを出力しませんでした。「処理の詳細を表示」に不一致の一覧があります。");
+  // 色付け: 指定したクラブが表に無い（＝塗られない）場合は知らせる
+  const hlMissing = [];
+  blocks.forEach((bk, i) => { if (!bk.match) return; for (const t of [bk.match.home, bk.match.away]) { if (!goalsSorted.some(r => r.name === t)) hlMissing.push(`試合${i + 1}: ${t}`); } });
+  if (blocks.some(b => b.match)) checks.push({ ok: !hlMissing.length, label: "対戦チームの色付け", detail: hlMissing.length ? `表に無いクラブ: ${hlMissing.join(" / ")}` : `${blocks.length} 試合ぶんの表に色付け` });
+  if (hlMissing.length) warnings.push("色付けに指定したクラブが表にありません（リーグが違う・表記が違う可能性）: " + hlMissing.join(" / "));
   const fatal = !sumOk || !allOk;
-  const badCells = [...cmpG.bad.map(b => "得点表 " + b), ...cmpC.bad.map(b => "失点表 " + b)];
   const unknown = [...new Set([...unknownG, ...unknownC])];
   checks.push({ ok: !unknown.length, label: "クラブ名の日本語化", detail: unknown.length ? `未登録 ${unknown.length}件（英語のまま出力）` : "全クラブ日本語化" });
   if (unknown.length) warnings.push("対応表に無いクラブがあり英語のまま出力しました。共有シートの該当クラブの「Opta表記」欄に次の英語名をそのまま書くか、Claudeに内蔵表への追加を頼んでください: " + unknown.join(" / "));
@@ -563,8 +623,101 @@ function currentLeague(){ return $("league").value; }
 function seasonValue(){ const s = $("season"); return s.value === CUSTOM_VAL ? ($("seasonCustom").value || "").trim() : s.value; }
 function matchdayValue(){ const n = parseInt($("matchday").value, 10); return (Number.isInteger(n) && n >= 1 && n <= 38) ? n : null; }
 function provisionalValue(){ return !!$("provisional").checked; }
+
+// ---- 対戦チームの色付け ----
+// 薄めの色（ユーザー指定 2026-09-15。既定は試合順に 黄・黄緑 → ピンク・青 → オレンジ・薄い黄 …）
+const PALETTE = [
+  { key: "yellow",  label: "黄",       argb: "FFFFFF00" },
+  { key: "lime",    label: "黄緑",     argb: "FF92D050" },
+  { key: "pink",    label: "ピンク",   argb: "FFFF9999" },
+  { key: "blue",    label: "青",       argb: "FFB4C6E7" },
+  { key: "orange",  label: "オレンジ", argb: "FFFFC58A" },
+  { key: "cream",   label: "薄い黄",   argb: "FFFFF2CC" },
+  { key: "mint",    label: "薄い緑",   argb: "FFC6EFCE" },
+  { key: "lavender",label: "薄い紫",   argb: "FFD9C3F0" },
+];
+const paletteArgb = key => (PALETTE.find(p => p.key === key) || PALETTE[0]).argb;
+const matchList = [];   // [{home, away, homeColor(key), awayColor(key)}]
+function defaultColors(i){ return [PALETTE[(i * 2) % PALETTE.length].key, PALETTE[(i * 2 + 1) % PALETTE.length].key]; }
+// 選択リーグのクラブ名（日本語）一覧: 内蔵表の順＋共有シートにだけある名前
+function teamNamesForLeague(league){
+  const names = (BUILTIN_DICT[league] || []).map(p => p[0]);
+  if (dictState.ok) {
+    const iName = findCol(dictState.header, "チーム名"), iLeague = findCol(dictState.header, "所属リーグ", "リーグ");
+    if (iName >= 0 && iLeague >= 0) for (const r of dictState.rows) { const n = (r[iName] || "").trim(); if (n && (r[iLeague] || "").trim() === league && !names.includes(n)) names.push(n); }
+  }
+  return names;
+}
+function useHighlight(){ return !!$("useHighlight").checked; }
+function renderMatches(){
+  const tb = $("matchRows"); tb.innerHTML = "";
+  const names = teamNamesForLeague(currentLeague());
+  const teamSel = (val, onchange) => {
+    const sel = document.createElement("select");
+    const o0 = document.createElement("option"); o0.value = ""; o0.textContent = "（選ぶ）"; sel.appendChild(o0);
+    for (const n of names) { const o = document.createElement("option"); o.value = n; o.textContent = n; sel.appendChild(o); }
+    if (val && !names.includes(val)) { const o = document.createElement("option"); o.value = val; o.textContent = val + "（このリーグに無い）"; sel.appendChild(o); }
+    sel.value = val || ""; sel.onchange = () => { onchange(sel.value); updateRun(); }; return sel;
+  };
+  const colorSel = (val, onchange) => {
+    const sel = document.createElement("select");
+    for (const p of PALETTE) { const o = document.createElement("option"); o.value = p.key; o.textContent = "■ " + p.label; o.style.color = "#" + p.argb.slice(2); sel.appendChild(o); }
+    sel.value = val; sel.style.background = "#" + paletteArgb(val).slice(2);
+    sel.onchange = () => { onchange(sel.value); sel.style.background = "#" + paletteArgb(sel.value).slice(2); }; return sel;
+  };
+  matchList.forEach((m, i) => {
+    const tr = document.createElement("tr");
+    const td = () => { const d = document.createElement("td"); tr.appendChild(d); return d; };
+    td().textContent = String(i + 1);
+    td().appendChild(teamSel(m.home, v => { m.home = v; }));
+    td().appendChild(colorSel(m.homeColor, v => { m.homeColor = v; }));
+    td().appendChild(teamSel(m.away, v => { m.away = v; }));
+    td().appendChild(colorSel(m.awayColor, v => { m.awayColor = v; }));
+    const x = document.createElement("button"); x.className = "rm"; x.textContent = "×"; x.title = "この試合を外す";
+    x.onclick = () => { matchList.splice(i, 1); renderMatches(); updateRun(); };
+    td().appendChild(x);
+    tb.appendChild(tr);
+  });
+}
+function addMatch(home = "", away = ""){
+  const [hc, ac] = defaultColors(matchList.length);
+  matchList.push({ home, away, homeColor: hc, awayColor: ac });
+  renderMatches(); updateRun();
+}
+// まとめて貼り付け: 1行1試合。「ホーム アウェイ」を空白・タブ・vs・- で区切る。登録名に完全一致した名前だけ入れる
+function importPastedMatches(text){
+  const names = teamNamesForLeague(currentLeague());
+  const found = new Map(names.map(n => [n, n]));
+  if (dictState.ok) {   // 共有シートの「別表記」も許す
+    const iName = findCol(dictState.header, "チーム名"), iAlt = findCol(dictState.header, "別表記", "別名");
+    if (iName >= 0 && iAlt >= 0) for (const r of dictState.rows) { const n = (r[iName] || "").trim(), a = (r[iAlt] || "").trim(); if (n && a && names.includes(n)) found.set(a, n); }
+  }
+  let added = 0; const miss = [];
+  for (const line of String(text || "").split(/\r?\n/)) {
+    const t = line.trim(); if (!t) continue;
+    const parts = t.split(/\s*(?:\bvs\.?\b|\bv\b|[-－–—:：、,\t]|　|\s)\s*/i).map(x => x.trim()).filter(Boolean);
+    if (parts.length < 2) { miss.push(t); continue; }
+    const h = found.get(parts[0]) || "", a = found.get(parts[parts.length - 1]) || "";
+    if (!h) miss.push(parts[0]); if (!a) miss.push(parts[parts.length - 1]);
+    addMatch(h, a); added++;
+  }
+  return { added, miss };
+}
+function matchesValue(){
+  if (!useHighlight()) return [];
+  return matchList.map(m => ({ home: m.home, away: m.away, homeColor: paletteArgb(m.homeColor), awayColor: paletteArgb(m.awayColor) }));
+}
+function matchesProblem(){
+  if (!useHighlight()) return null;
+  if (!matchList.length) return "色付けする試合が1つもありません（「＋ 試合を追加」で入れるか、色付けのチェックを外してください）";
+  for (let i = 0; i < matchList.length; i++) { const m = matchList[i];
+    if (!m.home || !m.away) return `試合${i + 1}: ホームとアウェイの両方を選んでください`;
+    if (m.home === m.away) return `試合${i + 1}: ホームとアウェイが同じクラブです`; }
+  return null;
+}
 function updateRun(){
-  runBtn.disabled = !(exceljsReady && !dictState.loading && files.goals && files.conceded && /^\d{4}\/\d{2}$/.test(seasonValue()) && matchdayValue());
+  runBtn.disabled = !(exceljsReady && !dictState.loading && files.goals && files.conceded && /^\d{4}\/\d{2}$/.test(seasonValue()) && matchdayValue() && !matchesProblem());
+  const pr = $("matchProblem"); if (pr) { pr.textContent = matchesProblem() || ""; }
 }
 function showFile(kind){
   const f = files[kind]; const cap = kind === "goals" ? "Goals" : "Conceded";
@@ -595,7 +748,7 @@ for (const kind of ["goals", "conceded"]) {
 (function initSettings(){
   const ls = $("league");
   for (const o of LEAGUE_OPTIONS) { const op = document.createElement("option"); op.value = o.label; op.textContent = o.label; ls.appendChild(op); }
-  ls.onchange = () => { renderDictStatus(); updateRun(); };
+  ls.onchange = () => { renderDictStatus(); renderMatches(); updateRun(); };
   // シーズン: 7月以降は当年始まり。前後1年＋自由入力
   const now = new Date(); const cur = (now.getMonth() + 1 >= 7) ? now.getFullYear() : now.getFullYear() - 1;
   const ss = $("season");
@@ -606,6 +759,14 @@ for (const kind of ["goals", "conceded"]) {
   $("seasonCustom").oninput = updateRun;
   $("matchday").oninput = updateRun;
   $("provisional").onchange = updateRun;
+  $("useHighlight").onchange = () => { $("hlOpts").style.display = useHighlight() ? "" : "none"; if (useHighlight() && !matchList.length) addMatch(); updateRun(); };
+  $("addMatch").onclick = () => addMatch();
+  $("clearMatches").onclick = () => { matchList.length = 0; renderMatches(); updateRun(); };
+  $("importMatches").onclick = () => {
+    const r = importPastedMatches($("pasteMatches").value);
+    $("pasteResult").textContent = `${r.added} 試合を取り込みました` + (r.miss.length ? `（一致しなかった名前: ${r.miss.join(" / ")}）` : "");
+    if (r.added) $("pasteMatches").value = "";
+  };
 })();
 (function initExcelJS(){
   if (window.__exceljsFailed || typeof ExcelJS === "undefined") {
@@ -640,9 +801,9 @@ runBtn.onclick = async () => {
   $("summary").textContent = ""; $("summary").className = "summary";
   $("alert").className = "alert"; $("alert").innerHTML = "";
   $("warnings").className = "warns"; $("warnings").innerHTML = "";
-  const league = currentLeague(), season = seasonValue(), matchday = matchdayValue(), provisional = provisionalValue();
+  const league = currentLeague(), season = seasonValue(), matchday = matchdayValue(), provisional = provisionalValue(), matches = matchesValue();
   try {
-    log(`設定: ${league} / ${season} / 第${matchday}節${provisional ? "（暫定）" : ""}`);
+    log(`設定: ${league} / ${season} / 第${matchday}節${provisional ? "（暫定）" : ""}` + (matches.length ? ` / 色付け ${matches.length} 試合: ` + matches.map(m => `${m.home}–${m.away}`).join("、") : ""));
     const dictInfo = buildDictionary(dictState.ok ? dictState.header : [], dictState.ok ? dictState.rows : [], league);
     dictInfo.sheetSkipped = !dictState.ok;
     log(`辞書: ${league} 内蔵 ${dictInfo.builtin}クラブ／共有シートのOpta表記 ${dictInfo.sheetHasColumn ? dictInfo.fromSheet + "クラブ（優先）" : "列なし"}${dictState.ok ? "" : "（シート読込失敗→内蔵のみ）"}`);
@@ -653,7 +814,7 @@ runBtn.onclick = async () => {
     const goals = localizeAndSort(rawG, dictInfo.map), conceded = localizeAndSort(rawC, dictInfo.map);
     log("得点（並び替え後）:\n" + goals.rows.map((r, i) => `  ${i + 1}. ${r.name}  SP=${r.setPiece} T=${r.total} P=${r.penalty} C=${r.corner} D=${r.direct} I=${r.indirect} Th=${r.throwIn} %=${r.setPiecePct}`).join("\n"));
     log("失点（並び替え後）:\n" + conceded.rows.map((r, i) => `  ${i + 1}. ${r.name}  SP=${r.setPiece} T=${r.total} P=${r.penalty} C=${r.corner} D=${r.direct} I=${r.indirect} Th=${r.throwIn} %=${r.setPiecePct}`).join("\n"));
-    const { wb, ws, layout } = buildWorkbook({ goals: goals.rows, conceded: conceded.rows, league, season, matchday, provisional });
+    const { wb, ws, layout } = buildWorkbook({ goals: goals.rows, conceded: conceded.rows, league, season, matchday, provisional, matches });
     const v = verify({ league, goalsRows: rawG, concededRows: rawC,
       goalsSrcSum: sumOptaColumn(wsG, OPTA_COLS.setPiece), concededSrcSum: sumOptaColumn(wsC, OPTA_COLS.setPiece),
       unknownG: goals.unknown, unknownC: conceded.unknown, dictInfo, ws, layout,
@@ -683,7 +844,7 @@ runBtn.onclick = async () => {
 };
 
 // テストから直接叩けるように純関数を公開
-window.KSP = { parseCSV, parseOptaRows, buildDictionary, localizeAndSort, buildWorkbook, verify, makeFileName, normKey, compareAllCells, LEAGUE_OPTIONS, STYLE, OUT_HEADERS, BUILTIN_DICT };
+window.KSP = { parseCSV, parseOptaRows, buildDictionary, localizeAndSort, buildWorkbook, verify, makeFileName, normKey, compareAllCells, importPastedMatches, teamNamesForLeague, matchList, LEAGUE_OPTIONS, STYLE, OUT_HEADERS, BUILTIN_DICT, PALETTE };
 </script>
 </body>
 </html>

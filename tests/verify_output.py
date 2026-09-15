@@ -160,19 +160,26 @@ class Report:
         return "\n".join(lines), n_ok == len(self.items)
 
 
-def check_table(ws, rep, start_row, title, rows, is_second, tag):
+def check_table(ws, rep, start_row, title, rows, is_second, tag, off=0, hl=None):
+    """off: 列のずらし幅（0=A〜H, 9=J〜Q）。hl: {日本語名: 塗りARGB}（色付け対象）"""
     r0, r1 = start_row, start_row + 1
     n = len(rows)
     last = r1 + n
+    hl = hl or {}
+    def cl(r, c):
+        return ws.cell(r, off + c)
+    def col_letter(c):
+        return openpyxl.utils.get_column_letter(off + c)
     # 表題
-    rep.check(ws.cell(r0, 1).value == title, f"{tag} 表題の文言", f"{ws.cell(r0, 1).value!r}")
-    rep.check(f"A{r0}:H{r0}" in {str(m) for m in ws.merged_cells.ranges}, f"{tag} 表題が A{r0}:H{r0} で結合")
+    rep.check(cl(r0, 1).value == title, f"{tag} 表題の文言", f"{cl(r0, 1).value!r}")
+    rng = f"{col_letter(1)}{r0}:{col_letter(8)}{r0}"
+    rep.check(rng in {str(m) for m in ws.merged_cells.ranges}, f"{tag} 表題が {rng} で結合")
     rep.check(abs((ws.row_dimensions[r0].height or 0) - (ROW_H["title2"] if is_second else ROW_H["title"])) < 0.01, f"{tag} 表題の行高", str(ws.row_dimensions[r0].height))
     # openpyxl は結合範囲の2番目以降を MergedCell（文字・塗り・配置なし）として読み、
     # 外周の罫線だけを各セルに合成する（先頭セルには四方 medium が集まる）。前回の完成品も同じ見え方だった。
     bad = []
     for c in range(1, 9):
-        cell = ws.cell(r0, c)
+        cell = cl(r0, c)
         if c == 1:
             exp = dict(font=FONT, size=12, bold=True, color=BLACK, fill=TITLE_FILL, h="center", v="center", shrink=True,
                        top="medium", bottom="medium", left="medium", right="medium")
@@ -187,11 +194,11 @@ def check_table(ws, rep, start_row, title, rows, is_second, tag):
             bad.append(f"{cell.coordinate}:{diff}")
     rep.check(not bad, f"{tag} 表題行の体裁（先頭セル全項目＋外周罫線）", "; ".join(bad)[:300])
     # 見出し
-    rep.check([ws.cell(r1, c).value for c in range(1, 9)] == OUT_HEADERS, f"{tag} 見出し8個", str([ws.cell(r1, c).value for c in range(1, 9)]))
+    rep.check([cl(r1, c).value for c in range(1, 9)] == OUT_HEADERS, f"{tag} 見出し8個", str([cl(r1, c).value for c in range(1, 9)]))
     rep.check(abs((ws.row_dimensions[r1].height or 0) - ROW_H["head"]) < 0.01, f"{tag} 見出しの行高", str(ws.row_dimensions[r1].height))
     bad = []
     for c in range(1, 9):
-        cell = ws.cell(r1, c)
+        cell = cl(r1, c)
         exp = dict(font=FONT, size=12 if c <= 4 else 11, bold=True, color=WHITE, fill=HEAD_FILL, h="center", v="center", wrap=True,
                    top="medium", bottom="thin", left="medium" if c == 1 else "thin", right="medium" if c == 8 else "thin",
                    fmt="@" if c == 8 else "General")
@@ -207,27 +214,28 @@ def check_table(ws, rep, start_row, title, rows, is_second, tag):
     bad = []
     for i, rec in enumerate(rows):
         r = r1 + 1 + i
-        got = [ws.cell(r, c).value for c in range(1, 9)]
+        got = [cl(r, c).value for c in range(1, 9)]
         exp = [rec["name"], rec["setPiece"], rec["penalty"], rec["corner"], rec["direct"], rec["indirect"], rec["throwIn"], rec["setPiecePct"]]
         if str(got[0]) != exp[0]:
             bad.append(f"A{r}: {got[0]!r} != {exp[0]!r}")
         for c in range(1, 8):
             try:
                 if abs(float(got[c]) - float(exp[c])) > 1e-9:
-                    bad.append(f"{ws.cell(r, c + 1).coordinate}: {got[c]!r} != {exp[c]!r}")
+                    bad.append(f"{cl(r, c + 1).coordinate}: {got[c]!r} != {exp[c]!r}")
             except (TypeError, ValueError):
-                bad.append(f"{ws.cell(r, c + 1).coordinate}: 数値でない {got[c]!r}")
+                bad.append(f"{cl(r, c + 1).coordinate}: 数値でない {got[c]!r}")
     rep.check(not bad, f"{tag} 本文の値と並び（{n}行×8列）", "; ".join(bad)[:400])
     # 本文の体裁
     bad = []
     for i in range(n):
         r = r1 + 1 + i
         is_last = r == last
+        hfill = hl.get(rows[i]["name"])
         if abs((ws.row_dimensions[r].height or 0) - ROW_H["body"]) > 0.01:
             bad.append(f"行{r}の高さ {ws.row_dimensions[r].height}")
         for c in range(1, 9):
-            cell = ws.cell(r, c)
-            exp = dict(font=FONT, size=12 if c <= 4 else 11, bold=False, fill=None, h="center", v="center", shrink=True,
+            cell = cl(r, c)
+            exp = dict(font=FONT, size=12 if c <= 4 else 11, bold=bool(hfill), fill=hfill, h="center", v="center", shrink=True,
                        top="thin", bottom="medium" if is_last else "thin", left="medium" if c == 1 else "thin", right="medium" if c == 8 else "thin",
                        fmt="0.00%" if c == 8 else "General")
             got = dict(font=cell.font.name, size=cell.font.size, bold=bool(cell.font.bold), fill=fill_rgb(cell),
@@ -241,7 +249,8 @@ def check_table(ws, rep, start_row, title, rows, is_second, tag):
     return last
 
 
-def verify(out_path, dict_csv=None, league=paths.LEAGUE, matchday=paths.MATCHDAY, goals_path=paths.GOALS, conceded_path=paths.CONCEDED):
+def verify(out_path, dict_csv=None, league=paths.LEAGUE, matchday=paths.MATCHDAY, goals_path=paths.GOALS, conceded_path=paths.CONCEDED, matches=None, match_colors=None):
+    """matches: [(ホーム, アウェイ)]（色付けした試合。None なら表は1組・色付けなし）"""
     rep = Report()
     wb = openpyxl.load_workbook(out_path)
     rep.check(wb.sheetnames == [f"{matchday}節用セットプレー"], "シート名", str(wb.sheetnames))
@@ -251,14 +260,28 @@ def verify(out_path, dict_csv=None, league=paths.LEAGUE, matchday=paths.MATCHDAY
     dic, has_col = load_dict(league, dict_csv)
     rep.check(True, "辞書", f"{league} 対応 {len(dic)}件（内蔵表" + ("＋共有シートのOpta表記列）" if has_col else "のみ・シートに列なし）"))
     eg, ec = expected_rows(goals, dic), expected_rows(conceded, dic)
-    # 列幅
-    bad = [f"{chr(64 + i + 1)}={ws.column_dimensions[chr(64 + i + 1)].width}" for i, w in enumerate(COL_WIDTHS)
-           if abs((ws.column_dimensions[chr(64 + i + 1)].width or 0) - w) > 0.1]
-    rep.check(not bad, "列幅 A〜H", "; ".join(bad))
-    end1 = check_table(ws, rep, 1, f"セットプレーからの得点数 (Opta) ※第{matchday}節終了時", eg, False, "得点表")
-    gap = end1 + 1
-    rep.check(abs((ws.row_dimensions[gap].height or 0) - ROW_H["gap"]) < 0.01 and all(ws.cell(gap, c).value is None for c in range(1, 9)), "空き行", f"行{gap} 高さ {ws.row_dimensions[gap].height}")
-    end2 = check_table(ws, rep, gap + 1, f"セットプレーからの失点数 (Opta) ※第{matchday}節終了時", ec, True, "失点表")
+    # ブロック（試合ごとに右へ複製した表）: 1行目の表題セルの位置で数える
+    n_blocks = len(matches) if matches else 1
+    STRIDE = 9
+    rep.check(all(ws.cell(1, b * STRIDE + 1).value for b in range(n_blocks)) and ws.cell(1, n_blocks * STRIDE + 1).value is None,
+              "表の組数", f"{n_blocks} 組（期待 {n_blocks}）")
+    end2 = None
+    for b in range(n_blocks):
+        off = b * STRIDE
+        tagb = f"表{b + 1} " if n_blocks > 1 else ""
+        hl = {}
+        if matches:
+            h, a = matches[b]
+            hc, ac = (match_colors or [("FFFFFF00", "FF92D050")] * n_blocks)[b]
+            hl = {h: hc, a: ac}
+            rep.check(any(r["name"] == h for r in eg) and any(r["name"] == a for r in eg), f"{tagb}色付け対象が表にある", f"{h} / {a}")
+        bad = [f"{openpyxl.utils.get_column_letter(off + i + 1)}={ws.column_dimensions[openpyxl.utils.get_column_letter(off + i + 1)].width}" for i, w in enumerate(COL_WIDTHS)
+               if abs((ws.column_dimensions[openpyxl.utils.get_column_letter(off + i + 1)].width or 0) - w) > 0.1]
+        rep.check(not bad, f"{tagb}列幅 8列", "; ".join(bad))
+        end1 = check_table(ws, rep, 1, f"セットプレーからの得点数 (Opta) ※第{matchday}節終了時", eg, False, f"{tagb}得点表", off, hl)
+        gap = end1 + 1
+        rep.check(abs((ws.row_dimensions[gap].height or 0) - ROW_H["gap"]) < 0.01 and all(ws.cell(gap, off + c).value is None for c in range(1, 9)), f"{tagb}空き行", f"行{gap} 高さ {ws.row_dimensions[gap].height}")
+        end2 = check_table(ws, rep, gap + 1, f"セットプレーからの失点数 (Opta) ※第{matchday}節終了時", ec, True, f"{tagb}失点表", off, hl)
     rep.check(ws.max_row == end2, "余計な行がない", f"max_row={ws.max_row} 期待={end2}")
     # 数式・エラー値
     bad = []
