@@ -101,6 +101,10 @@ Optaの「What Scored - Goals」「What Conceded - Goals」の2つのExcelを落
 | `docs/opta-names-draft.csv` / `docs/opta-names-column.txt` | 内蔵表の写し（CSV）と、共有シートへ貼る場合用の1列テキスト（任意） |
 | `docs/superpowers/specs/` | 設計書 |
 
+## 配色
+
+- イメージ色はオレンジ（`--p1:#ea580c → --p2:#f59e0b` のグラデーション。2026-09-15にユーザー指定で紫から変更）。kofa の他アプリは Word＝青、Excelフォーマット＝緑、Excelデータ加工＝紫で、それらと被らない色にしている。画面の作り（カード式・タブ）は Excelデータ加工／Excelフォーマット作成と同じ。
+
 ## 仕組み・技術メモ
 
 - 素のHTML＋JavaScript。Excelの読み書きは [ExcelJS](https://github.com/exceljs/exceljs) **4.4.0**（cdnjs・バージョン固定）。Python/Pyodideは使わない（起動待ちなし）。

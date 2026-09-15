@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#6d28d9">
-<link rel="icon" href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236d28d9'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='28' height='28' rx='7' fill='url(%23g)'/%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round' opacity='0.95'%3E%3Cpath d='M9 24 Q16 12 25 8'/%3E%3Cline x1='9' y1='24' x2='9' y2='11'/%3E%3Cpath d='M9 11 L15 13 L9 15 Z' fill='%23ffffff'/%3E%3Ccircle cx='23' cy='22' r='2.6'/%3E%3C/g%3E%3C/svg%3E">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ea580c'/%3E%3Cstop offset='1' stop-color='%23f59e0b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='28' height='28' rx='7' fill='url(%23g)'/%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round' opacity='0.95'%3E%3Cpath d='M9 24 Q16 12 25 8'/%3E%3Cline x1='9' y1='24' x2='9' y2='11'/%3E%3Cpath d='M9 11 L15 13 L9 15 Z' fill='%23ffffff'/%3E%3Ccircle cx='23' cy='22' r='2.6'/%3E%3C/g%3E%3C/svg%3E">
 <title>セットプレーExcel作成</title>
 <style>
   :root{
-    --bg:#f5f4fb; --ink:#0f172a; --muted:#64748b; --line:#e4e9ee; --card:#fff;
-    --p1:#6d28d9; --p2:#8b5cf6; --grad:linear-gradient(135deg,#6d28d9 0%,#8b5cf6 100%);
-    --ring:rgba(109,40,217,.16); --dash:#cdbef2; --soft:#f1ecfb; --ok:#16a34a; --warn:#c2410c;
+    --bg:#fbf7f2; --ink:#0f172a; --muted:#64748b; --line:#e4e9ee; --card:#fff;
+    --p1:#ea580c; --p2:#f59e0b; --grad:linear-gradient(135deg,#ea580c 0%,#f59e0b 100%);
+    --ring:rgba(234,88,12,.16); --dash:#f6c9a6; --soft:#fff3e8; --ok:#16a34a; --warn:#b91c1c;
     --font:Inter,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,system-ui,sans-serif;
   }
   *{ box-sizing:border-box; }
@@ -36,18 +36,18 @@
   .fileline{ display:none; padding:8px 12px; background:var(--soft); border:1px solid var(--line); border-radius:9px; margin-top:8px; font-size:.9rem; justify-content:space-between; align-items:center; gap:10px; }
   .fileline.show{ display:flex; }
   .fileline .meta{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:.82rem; white-space:nowrap; }
-  .rm{ border:0; background:#e7dffb; color:var(--p1); width:22px; height:22px; border-radius:50%; font-size:14px; line-height:1; cursor:pointer; padding:0; }
-  .rm:hover{ background:#d9ccf7; }
+  .rm{ border:0; background:#fde4d0; color:var(--p1); width:22px; height:22px; border-radius:50%; font-size:14px; line-height:1; cursor:pointer; padding:0; }
+  .rm:hover{ background:#fbd2b3; }
   button{ font:inherit; border:0; border-radius:9px; padding:11px 22px; cursor:pointer; }
   button.primary{ background:var(--grad); color:#fff; font-weight:700; box-shadow:0 6px 16px -6px var(--ring); }
-  button.primary:disabled{ background:#c7c2d6; box-shadow:none; cursor:not-allowed; }
+  button.primary:disabled{ background:#d9cfc4; box-shadow:none; cursor:not-allowed; }
   button.small{ background:#fff; color:var(--p1); border:1px solid var(--dash); padding:5px 12px; font-size:.82rem; font-weight:600; border-radius:8px; }
   button.small:hover{ background:var(--soft); }
   #status{ font-size:.88rem; color:var(--muted); margin-top:10px; }
   .alert{ display:none; border-radius:10px; padding:12px 14px; margin:0 0 12px; font-size:.9rem; line-height:1.75; }
   .alert.danger{ display:block; background:#fdecec; border:1px solid #f3b4b4; color:#9b1c1c; }
   .alert b{ color:#7f1414; }
-  .setblock{ border:1px solid var(--line); border-radius:14px; padding:16px 18px 18px; margin-bottom:14px; background:#fcfbff; }
+  .setblock{ border:1px solid var(--line); border-radius:14px; padding:16px 18px 18px; margin-bottom:14px; background:#fffcf9; }
   .setblock:last-child{ margin-bottom:0; }
   .setblock-title{ display:flex; align-items:center; gap:9px; font-weight:800; font-size:.92rem; color:var(--p1); margin:0 0 14px; padding-bottom:10px; border-bottom:1px solid var(--line); }
   .setblock-title .dot{ width:9px; height:9px; border-radius:50%; background:var(--grad); flex:0 0 auto; }
@@ -74,7 +74,7 @@
   .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:0 0 16px; }
   .tab{ padding:9px 17px; cursor:pointer; font-size:13.5px; font-weight:700; color:var(--muted); background:#fff; border:1px solid var(--line); border-radius:999px; transition:.15s; }
   .tab:hover{ border-color:var(--dash); color:var(--p1); }
-  .tab.active{ color:#fff; background:var(--grad); border-color:transparent; box-shadow:0 7px 16px -8px rgba(109,40,217,.7); }
+  .tab.active{ color:#fff; background:var(--grad); border-color:transparent; box-shadow:0 7px 16px -8px rgba(234,88,12,.7); }
   .page{ display:none; } .page.active{ display:block; }
   .tablewrap{ overflow-x:auto; }
   table.teams{ border-collapse:collapse; width:100%; font-size:.88rem; }
@@ -101,8 +101,8 @@
   details.detail summary::-webkit-details-marker{ display:none; }
   details.detail summary::before{ content:"▸ "; }
   details.detail[open] summary::before{ content:"▾ "; }
-  #log{ background:#faf9fe; color:#3a3550; border:1px solid var(--line); font-family:Consolas,monospace; font-size:.78rem; border-radius:8px; padding:10px; max-height:260px; overflow:auto; white-space:pre-wrap; margin-top:8px; }
-  .spin{ display:inline-block; width:14px; height:14px; border:2px solid #d8d2e8; border-top-color:var(--p1); border-radius:50%; animation:s .8s linear infinite; vertical-align:-2px; }
+  #log{ background:#fffaf5; color:#4a3b2e; border:1px solid var(--line); font-family:Consolas,monospace; font-size:.78rem; border-radius:8px; padding:10px; max-height:260px; overflow:auto; white-space:pre-wrap; margin-top:8px; }
+  .spin{ display:inline-block; width:14px; height:14px; border:2px solid #f3ddcb; border-top-color:var(--p1); border-radius:50%; animation:s .8s linear infinite; vertical-align:-2px; }
   @keyframes s{ to{ transform:rotate(360deg); } }
   .safe{ font-size:.82rem; color:var(--muted); margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); }
 </style>
@@ -112,7 +112,7 @@
 <div class="wrap">
   <header>
     <div class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d28d9"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ea580c"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs>
 <rect x="2" y="2" width="28" height="28" rx="7" fill="url(#g)"/>
 <g fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="0.95">
 <path d="M9 24 Q16 12 25 8"/><line x1="9" y1="24" x2="9" y2="11"/><path d="M9 11 L15 13 L9 15 Z" fill="#ffffff"/><circle cx="23" cy="22" r="2.6"/>
