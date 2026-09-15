@@ -58,16 +58,16 @@ UNIT_JS = r"""
   const dNo = KSP.buildDictionary(["チーム名","所属リーグ"], [["x","ラ・リーガ"]], "ラ・リーガ");
   t("辞書 列なしでも内蔵表で動く", dNo.sheetHasColumn === false && dNo.map.size > 0, JSON.stringify([dNo.sheetHasColumn, dNo.map.size]));
   // localizeAndSort: 日本語化・未登録・並び（SP降順→Total降順→名前昇順）
-  const rowsIn = [
-    {team:"Unknown FC", setPiece:4, total:9, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.5},
-    {team:"REAL MADRID", setPiece:3, total:14, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.2},
-    {team:"Real Betis", setPiece:3, total:14, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.2},
-    {team:"Atlético de Madrid", setPiece:3, total:20, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.1},
+  const rowsIn = [   // order = Opta ファイルでの並び
+    {team:"Unknown FC", order:0, setPiece:4, total:9, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.5},
+    {team:"REAL MADRID", order:1, setPiece:3, total:14, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.2},
+    {team:"Real Betis", order:2, setPiece:3, total:14, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.2},
+    {team:"Atlético de Madrid", order:3, setPiece:3, total:20, penalty:0,corner:0,direct:0,indirect:0,throwIn:0,setPiecePct:0.1},
   ];
   const ls = KSP.localizeAndSort(rowsIn, d.map);
   t("日本語化 大小無視", ls.rows.some(r => r.name === "レアル・マドリー"), ls.rows.map(r=>r.name).join("|"));
   t("未登録は英語のまま＋一覧", ls.unknown.length === 1 && ls.unknown[0] === "Unknown FC" && ls.rows[0].name === "Unknown FC", JSON.stringify(ls.unknown));
-  t("並び SP降順→Total降順→名前昇順", ls.rows.map(r=>r.name).join("|") === "Unknown FC|アトレティコ・デ・マドリー|ベティス|レアル・マドリー", ls.rows.map(r=>r.name).join("|"));
+  t("並び SP降順→同点はOptaの並び", ls.rows.map(r=>r.name).join("|") === "Unknown FC|レアル・マドリー|ベティス|アトレティコ・デ・マドリー", ls.rows.map(r=>r.name).join("|"));
   // 表題の注記（自由文言）
   const wbT = KSP.buildWorkbook({ goals: [rowsIn[1]], conceded: [rowsIn[1]], league: "ラ・リーガ", season: "2026/27", matchday: 5, provisional: true });
   t("暫定チェックで表題に「暫定」", wbT.ws.getCell(1,1).value === "セットプレーからの得点数 (Opta) ※第5節終了時暫定" && wbT.ws.getCell(5,1).value === "セットプレーからの失点数 (Opta) ※第5節終了時暫定", wbT.ws.getCell(1,1).value);

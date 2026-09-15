@@ -354,7 +354,7 @@ function parseOptaRows(ws){
     const row = ws.getRow(r);
     const team = cellText(row.getCell(idx.team));
     if (!team) continue;
-    const rec = { team };
+    const rec = { team, order: rows.length };   // order = Optaファイルでの並び（Rk順）。同点のときの並びに使う
     for (const key of ["setPiece","penalty","corner","direct","indirect","throwIn","total","setPiecePct"]) {
       const n = cellNumber(row.getCell(idx[key]));
       if (!Number.isFinite(n)) throw new AppError(`${r}行目「${team}」の ${OPTA_COLS[key]} が数値ではありません`);
@@ -513,7 +513,8 @@ function localizeAndSort(rows, dict){
     if (!name) unknown.push(r.team);
     return Object.assign({}, r, { name: name || r.team });
   });
-  out.sort((a, b) => (b.setPiece - a.setPiece) || (b.total - a.total) || a.name.localeCompare(b.name, "ja"));
+  // セットプレー得点の多い順。同点は Opta ファイルの並び（Rk 順）をそのまま使う（2026-09-15 ユーザー指定。旧: 総得点→五十音順）
+  out.sort((a, b) => (b.setPiece - a.setPiece) || (a.order - b.order));
   return { rows: out, unknown };
 }
 function makeFileName(league, season, matchday, provisional){

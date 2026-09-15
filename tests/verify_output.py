@@ -64,7 +64,7 @@ def read_opta(path):
         team = str(r[idx["team"]] or "").strip()
         if not team:
             continue
-        rec = {"team": team}
+        rec = {"team": team, "order": len(rows)}
         for k in ("setPiece", "penalty", "corner", "direct", "indirect", "throwIn", "total"):
             rec[k] = float(r[idx[k]])
         rec["setPiecePct"] = round(float(r[idx["setPiecePct"]]) * 100) / 100
@@ -125,7 +125,7 @@ def expected_rows(opta_rows, dic):
         rec = dict(r)
         rec["name"] = dic.get(norm_key(r["team"]), r["team"])
         out.append(rec)
-    out.sort(key=lambda x: (-x["setPiece"], -x["total"], x["name"]))
+    out.sort(key=lambda x: (-x["setPiece"], x["order"]))   # 同点は Opta ファイルの並び
     return out
 
 
