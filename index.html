@@ -324,8 +324,8 @@ function parseOptaRows(ws){
       if (!Number.isFinite(n)) throw new AppError(`${r}行目「${team}」の ${OPTA_COLS[key]} が数値ではありません`);
       rec[key] = n;
     }
-    // Opta の % は 9.52 のような100倍値 → 0.0952（浮動小数のごみを丸める）
-    rec.setPiecePct = Math.round(rec.setPiecePct * 100) / 10000;
+    // Opta の % は 9.52 のような値。そのまま使い、表示形式 0.00"％"（全角％）で見せる（2026-09-15変更。旧: ÷100 して 0.00%）
+    rec.setPiecePct = Math.round(rec.setPiecePct * 100) / 100;
     rows.push(rec);
   }
   if (!rows.length) throw new AppError("データ行がありません（2行目以降が空です）");
@@ -360,7 +360,7 @@ function compareAllCells(ws, first, last, sortedRows, srcMatrix, off = 0){
       total++;
       const got = Number(ws.getCell(r, off + k + 2).value);
       let exp = src ? src[keys[k]] : NaN;
-      if (keys[k] === "setPiecePct") exp = Math.round(exp * 100) / 10000;   // 元は100倍値
+      if (keys[k] === "setPiecePct") exp = Math.round(exp * 100) / 100;   // 元の値そのまま（小数2桁に丸め）
       if (!src || !Number.isFinite(got) || Math.abs(got - exp) > 1e-9) bad.push(`${colLetter(off + k + 2)}${r}（${rec.team}）: ${got} ≠ 元 ${exp}`);
     }
   }
@@ -533,7 +533,7 @@ function writeTable(ws, startRow, title, rows, isSecond, off = 0, highlight = nu
       const cell = ws.getCell(r, C(c)); cell.value = vals[c - 1];
       applyStyle(cell, { size: fontSize(c), bold: !!hl, fill: hl || null,
         border: borderOf("thin", isLast ? "medium" : "thin", c === 1 ? "medium" : "thin", c === NCOL ? "medium" : "thin"),
-        numFmt: c === NCOL ? "0.00%" : null });
+        numFmt: c === NCOL ? '0.00"％"' : null });
     }
   });
   return last;

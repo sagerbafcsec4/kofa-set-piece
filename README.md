@@ -34,7 +34,7 @@ Optaの「What Scored - Goals」「What Conceded - Goals」の2つのExcelを落
 
 ## 絶対ルール（データ保護）
 
-- Optaの数値は**書き換えない**。やるのは「並べ替え」「クラブ名を日本語に置換」「割合を÷100してExcelの％書式にする」だけ。
+- Optaの数値は**書き換えない**。やるのは「並べ替え」「クラブ名を日本語に置換」「割合の列に全角％の表示形式を付ける」だけ。
 - 出力前に**出来上がった表の全セル（クラブ名＋数値7列×全クラブ×得点・失点＝20クラブなら320セル）を、元ファイルを別経路で読み直した値と1つずつ自動照合**する（`readOptaMatrix` → `compareAllCells`）。1か所でも違えばファイルを出さず、不一致セルを「処理の詳細」に一覧する（2026-09-15強化）。あわせて Total 列の合計照合も行う。
 - 元ファイルは変更せず、別ファイル（`{リーグ}_セットプレー情報_{シーズン}_第{節}節.xlsx`）をダウンロードする方式。
 - 実データ（`*.xlsx`）はこのリポジトリに入れない（`.gitignore` 済み）。
@@ -68,9 +68,9 @@ Optaの「What Scored - Goals」「What Conceded - Goals」の2つのExcelを落
 | 表題 | `セットプレーからの得点数 (Opta) ※第{節}節終了時`／`…失点数…`。「暫定」にチェックを入れると表題は `※第{節}節終了時暫定`、ファイル名は `…第{節}節暫定.xlsx`（シート名は変わらない。2026-09-15追加） |
 | 配置 | 得点表: 1行目 表題（A:H結合）／2行目 見出し／3行目〜 本文。1行空けて失点表（20クラブなら 24〜45行目） |
 | 見出し | Team / Total / Penalties / Corners / Direct Freekicks / Indirect Freekicks / Throw In / Goals From Set Piece ％（長いものは2行・％は全角。2026-09-15変更） |
-| 列の対応 | Total←Goals From Set Piece、Penalty←…Penalties、Corners←…Corner、Dir.←…Direct Freekicks、Ind.←…Indirect Freekicks、Throws←…Throw In、%←…Set Piece %÷100 |
+| 列の対応 | Total←Goals From Set Piece、Penalty←…Penalties、Corners←…Corner、Dir.←…Direct Freekicks、Ind.←…Indirect Freekicks、Throws←…Throw In、％←…Set Piece % の値そのまま（42.86 のように。表示形式 `0.00"％"` で全角％を付ける。2026-09-15変更・旧は÷100して 0.00%） |
 | 並び | セットプレー得点（失点）の降順 → Optaの Total 降順 → 日本語名の昇順 |
-| 体裁 | 全セル MS UI Gothic・中央揃え・「縮小して全体を表示」（見出し行だけ「折り返し」＝2行表示）。表題: 薄灰 `E7E6E6`・黒太字12pt・四方太線。見出し: 黒背景・白太字（A〜D 12pt／E〜H 11pt）。本文: 外周太線・内側細線。%列は `0.00%`。列幅 A=25・B〜H=13（2026-09-15 ユーザー指定。初版はテンプレ実測値 Meiryo UI／21.7…） |
+| 体裁 | 全セル MS UI Gothic・中央揃え・「縮小して全体を表示」（見出し行だけ「折り返し」＝2行表示）。表題: 薄灰 `E7E6E6`・黒太字12pt・四方太線。見出し: 黒背景・白太字（A〜D 12pt／E〜H 11pt）。本文: 外周太線・内側細線。％列は `0.00"％"`（値は Opta の100倍値そのまま）。列幅 A=25・B〜H=13（2026-09-15 ユーザー指定。初版はテンプレ実測値 Meiryo UI／21.7…） |
 
 ## 対戦チームの色付け（2026-09-15追加）
 

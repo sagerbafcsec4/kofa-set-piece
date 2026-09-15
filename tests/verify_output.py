@@ -67,7 +67,7 @@ def read_opta(path):
         rec = {"team": team}
         for k in ("setPiece", "penalty", "corner", "direct", "indirect", "throwIn", "total"):
             rec[k] = float(r[idx[k]])
-        rec["setPiecePct"] = round(float(r[idx["setPiecePct"]]) * 100) / 10000
+        rec["setPiecePct"] = round(float(r[idx["setPiecePct"]]) * 100) / 100
         rows.append(rec)
     src_sum = sum(float(r[idx["setPiece"]]) for r in ws.iter_rows(min_row=2, values_only=True) if r[idx["team"]])
     return rows, src_sum
@@ -237,7 +237,7 @@ def check_table(ws, rep, start_row, title, rows, is_second, tag, off=0, hl=None)
             cell = cl(r, c)
             exp = dict(font=FONT, size=12 if c <= 4 else 11, bold=bool(hfill), fill=hfill, h="center", v="center", shrink=True,
                        top="thin", bottom="medium" if is_last else "thin", left="medium" if c == 1 else "thin", right="medium" if c == 8 else "thin",
-                       fmt="0.00%" if c == 8 else "General")
+                       fmt='0.00"％"' if c == 8 else "General")
             got = dict(font=cell.font.name, size=cell.font.size, bold=bool(cell.font.bold), fill=fill_rgb(cell),
                        h=cell.alignment.horizontal, v=cell.alignment.vertical, shrink=bool(cell.alignment.shrink_to_fit),
                        top=border_style(cell, "top"), bottom=border_style(cell, "bottom"), left=border_style(cell, "left"), right=border_style(cell, "right"),

@@ -74,8 +74,8 @@ UNIT_JS = r"""
   const wbD = KSP.buildWorkbook({ goals: [rowsIn[1]], conceded: [rowsIn[1]], league: "ラ・リーガ", season: "2026/27", matchday: 5 });
   t("チェックなしなら「第5節終了時」", wbD.ws.getCell(1,1).value === "セットプレーからの得点数 (Opta) ※第5節終了時", wbD.ws.getCell(1,1).value);
   // 全セル照合: 正しい表は一致、わざと1セル壊すと検知
-  const srcM = new Map([[KSP.normKey("Real Madrid"), {setPiece:3, penalty:0, corner:0, direct:0, indirect:0, throwIn:0, setPiecePct:20}]]);
-  const okRow = [{team:"Real Madrid", name:"レアル・マドリー", setPiece:3, total:14, penalty:0, corner:0, direct:0, indirect:0, throwIn:0, setPiecePct:0.2}];
+  const srcM = new Map([[KSP.normKey("Real Madrid"), {setPiece:3, penalty:0, corner:0, direct:0, indirect:0, throwIn:0, setPiecePct:21.43}]]);
+  const okRow = [{team:"Real Madrid", name:"レアル・マドリー", setPiece:3, total:14, penalty:0, corner:0, direct:0, indirect:0, throwIn:0, setPiecePct:21.43}];
   const wbV = KSP.buildWorkbook({ goals: okRow, conceded: okRow, league: "ラ・リーガ", season: "2026/27", matchday: 5 });
   const cmpOk = KSP.compareAllCells(wbV.ws, 3, 3, okRow, srcM);
   t("全セル照合 正しい表は一致", cmpOk.ok && cmpOk.total === 8, JSON.stringify(cmpOk));
