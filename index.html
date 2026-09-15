@@ -124,9 +124,9 @@
       <div class="grid3">
         <div class="field"><label for="league">リーグ</label><select id="league" class="dateinput"></select></div>
         <div class="field"><label for="season">シーズン</label><select id="season" class="dateinput"></select><input id="seasonCustom" type="text" class="dateinput" placeholder="例: 2028/29" style="display:none;margin-top:6px"></div>
-        <div class="field"><label for="matchday">節</label><input id="matchday" type="number" class="dateinput" min="1" max="38" step="1" placeholder="例: 5"><div class="hint">シート名・ファイル名と、下の表題の注記の初期値に使います</div></div>
+        <div class="field"><label for="matchday">節</label><input id="matchday" type="number" class="dateinput" min="1" max="38" step="1" placeholder="例: 5"><div class="hint">数字だけ。表題「※第N節終了時」・シート名・ファイル名に使います</div></div>
       </div>
-      <div class="field" style="margin-top:12px"><label for="titleNote">表題の注記（「※」のあとに入る文言）</label><input id="titleNote" type="text" class="dateinput" placeholder="節を入れると自動で入ります（例: 第5節終了時）"><div class="hint">表題は「セットプレーからの得点数 (Opta) ※<b>ここの文言</b>」になります。「第5節終了時暫定」のように自由に書き換えられます。空欄のときは節から自動で入れます</div></div>
+      <label class="chk" style="margin-top:12px;display:flex;align-items:center;gap:8px;font-size:.92rem;cursor:pointer"><input id="provisional" type="checkbox" style="width:17px;height:17px;accent-color:var(--p1)"> 暫定（節の途中など。表題が「第N節終了時<b>暫定</b>」、ファイル名が「…第N節<b>暫定</b>.xlsx」になります）</label>
       <div class="dict" id="dictStatus"><span class="spin"></span> チーム名辞書を読み込み中…</div>
       <div class="hint">クラブ名は、アプリ内蔵の対応表（Optaの英語名→日本語名）で日本語にします。Excelフォーマット作成アプリと同じ共有スプレッドシートに「Opta表記」列があれば、そちらの登録を優先します。対応表に無いクラブは英語のまま出力し、結果欄でお知らせします。</div>
     </div>
@@ -408,9 +408,9 @@ function localizeAndSort(rows, dict){
   out.sort((a, b) => (b.setPiece - a.setPiece) || (b.total - a.total) || a.name.localeCompare(b.name, "ja"));
   return { rows: out, unknown };
 }
-function makeFileName(league, season, matchday){
+function makeFileName(league, season, matchday, provisional){
   const s = String(season).replace(/\//g, "-");
-  return `${league}_セットプレー情報_${s}_第${matchday}節.xlsx`.replace(/[\\/:*?"<>|]/g, "-");
+  return `${league}_セットプレー情報_${s}_第${matchday}節${provisional ? "暫定" : ""}.xlsx`.replace(/[\\/:*?"<>|]/g, "-");
 }
 
 // ====================================================================
@@ -463,8 +463,8 @@ function writeTable(ws, startRow, title, rows, isSecond){
   });
   return last;
 }
-function buildWorkbook({ goals, conceded, league, season, matchday, titleNote }){
-  const note = titleNote || `第${matchday}節終了時`;
+function buildWorkbook({ goals, conceded, league, season, matchday, provisional }){
+  const note = `第${matchday}節終了時` + (provisional ? "暫定" : "");
   const wb = new ExcelJS.Workbook();
   wb.creator = "kofa-set-piece"; wb.created = new Date();
   const ws = wb.addWorksheet(`${matchday}節用セットプレー`);
@@ -516,8 +516,7 @@ const runBtn = $("run"), statusEl = $("status");
 function currentLeague(){ return $("league").value; }
 function seasonValue(){ const s = $("season"); return s.value === CUSTOM_VAL ? ($("seasonCustom").value || "").trim() : s.value; }
 function matchdayValue(){ const n = parseInt($("matchday").value, 10); return (Number.isInteger(n) && n >= 1 && n <= 38) ? n : null; }
-function defaultTitleNote(md){ return md ? `第${md}節終了時` : ""; }
-function titleNoteValue(){ const v = ($("titleNote").value || "").trim(); return v || defaultTitleNote(matchdayValue()); }
+function provisionalValue(){ return !!$("provisional").checked; }
 function updateRun(){
   runBtn.disabled = !(exceljsReady && !dictState.loading && files.goals && files.conceded && /^\d{4}\/\d{2}$/.test(seasonValue()) && matchdayValue());
 }
@@ -559,9 +558,8 @@ for (const kind of ["goals", "conceded"]) {
   ss.value = `${cur}/${String((cur + 1) % 100).padStart(2, "0")}`;
   ss.onchange = () => { const c = ss.value === CUSTOM_VAL; $("seasonCustom").style.display = c ? "" : "none"; if (c) $("seasonCustom").focus(); updateRun(); };
   $("seasonCustom").oninput = updateRun;
-  let noteAuto = true;   // 注記欄をユーザーがまだ手で触っていない間は、節に合わせて自動で書き換える
-  $("matchday").oninput = () => { if (noteAuto) $("titleNote").value = defaultTitleNote(matchdayValue()); updateRun(); };
-  $("titleNote").oninput = () => { noteAuto = ($("titleNote").value.trim() === ""); updateRun(); };
+  $("matchday").oninput = updateRun;
+  $("provisional").onchange = updateRun;
 })();
 (function initExcelJS(){
   if (window.__exceljsFailed || typeof ExcelJS === "undefined") {
@@ -596,9 +594,9 @@ runBtn.onclick = async () => {
   $("summary").textContent = ""; $("summary").className = "summary";
   $("alert").className = "alert"; $("alert").innerHTML = "";
   $("warnings").className = "warns"; $("warnings").innerHTML = "";
-  const league = currentLeague(), season = seasonValue(), matchday = matchdayValue(), titleNote = titleNoteValue();
+  const league = currentLeague(), season = seasonValue(), matchday = matchdayValue(), provisional = provisionalValue();
   try {
-    log(`設定: ${league} / ${season} / 第${matchday}節 / 表題の注記「${titleNote}」`);
+    log(`設定: ${league} / ${season} / 第${matchday}節${provisional ? "（暫定）" : ""}`);
     const dictInfo = buildDictionary(dictState.ok ? dictState.header : [], dictState.ok ? dictState.rows : [], league);
     dictInfo.sheetSkipped = !dictState.ok;
     log(`辞書: ${league} 内蔵 ${dictInfo.builtin}クラブ／共有シートのOpta表記 ${dictInfo.sheetHasColumn ? dictInfo.fromSheet + "クラブ（優先）" : "列なし"}${dictState.ok ? "" : "（シート読込失敗→内蔵のみ）"}`);
@@ -609,14 +607,14 @@ runBtn.onclick = async () => {
     const goals = localizeAndSort(rawG, dictInfo.map), conceded = localizeAndSort(rawC, dictInfo.map);
     log("得点（並び替え後）:\n" + goals.rows.map((r, i) => `  ${i + 1}. ${r.name}  SP=${r.setPiece} T=${r.total} P=${r.penalty} C=${r.corner} D=${r.direct} I=${r.indirect} Th=${r.throwIn} %=${r.setPiecePct}`).join("\n"));
     log("失点（並び替え後）:\n" + conceded.rows.map((r, i) => `  ${i + 1}. ${r.name}  SP=${r.setPiece} T=${r.total} P=${r.penalty} C=${r.corner} D=${r.direct} I=${r.indirect} Th=${r.throwIn} %=${r.setPiecePct}`).join("\n"));
-    const { wb, ws, layout } = buildWorkbook({ goals: goals.rows, conceded: conceded.rows, league, season, matchday, titleNote });
+    const { wb, ws, layout } = buildWorkbook({ goals: goals.rows, conceded: conceded.rows, league, season, matchday, provisional });
     const v = verify({ league, goalsRows: rawG, concededRows: rawC,
       goalsSrcSum: sumOptaColumn(wsG, OPTA_COLS.setPiece), concededSrcSum: sumOptaColumn(wsC, OPTA_COLS.setPiece),
       unknownG: goals.unknown, unknownC: conceded.unknown, dictInfo, ws, layout });
     renderChecks(v.checks);
     v.checks.forEach(c => log(`${c.ok ? "✔" : "✘"} ${c.label}: ${c.detail}`));
     if (v.fatal) throw new AppError("合計の照合に失敗したため、ファイルを出力しませんでした。");
-    const name = makeFileName(league, season, matchday);
+    const name = makeFileName(league, season, matchday, provisional);
     download(name, await wb.xlsx.writeBuffer());
     log("出力: " + name + "（シート「" + ws.name + "」）");
     if (v.warnings.length) {

@@ -65,7 +65,7 @@ Optaの「What Scored - Goals」「What Conceded - Goals」の2つのExcelを落
 |---|---|
 | ファイル名 | `{リーグ}_セットプレー情報_{シーズン(/→-)}_第{節}節.xlsx`（例 `ラ・リーガ_セットプレー情報_2026-27_第5節.xlsx`） |
 | シート名 | `{節}節用セットプレー` |
-| 表題 | `セットプレーからの得点数 (Opta) ※{注記}`／`…失点数…`。注記は画面の「表題の注記」欄（節を入れると「第N節終了時」が自動で入り、「第5節終了時暫定」のように書き換え可。2026-09-15追加） |
+| 表題 | `セットプレーからの得点数 (Opta) ※第{節}節終了時`／`…失点数…`。「暫定」にチェックを入れると表題は `※第{節}節終了時暫定`、ファイル名は `…第{節}節暫定.xlsx`（シート名は変わらない。2026-09-15追加） |
 | 配置 | 得点表: 1行目 表題（A:H結合）／2行目 見出し／3行目〜 本文。1行空けて失点表（20クラブなら 24〜45行目） |
 | 見出し | Team / Total / Penalties / Corners / Direct Freekicks / Indirect Freekicks / Throw In / Goals From Set Piece ％（長いものは2行・％は全角。2026-09-15変更） |
 | 列の対応 | Total←Goals From Set Piece、Penalty←…Penalties、Corners←…Corner、Dir.←…Direct Freekicks、Ind.←…Indirect Freekicks、Throws←…Throw In、%←…Set Piece %÷100 |
