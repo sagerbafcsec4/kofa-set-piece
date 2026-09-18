@@ -591,7 +591,9 @@ function buildWorkbook({ goals, conceded, league, season, matchday, provisional,
   const note = `第${matchday}節終了時` + (provisional ? "暫定" : "");
   const wb = new ExcelJS.Workbook();
   wb.creator = "kofa-set-piece"; wb.created = new Date();
-  const ws = wb.addWorksheet(`${matchday}節用セットプレー`);
+  // 表示設定（sheetViews）を必ず書き出す。これが無いと Excel（日本語環境）が行の高さを 0.8倍で解釈する
+  // （2026-09-18 実測: 表題20→16.1・見出し30→24・表15→12。倍率は元Excelに合わせて85%）
+  const ws = wb.addWorksheet(`${matchday}節用セットプレー`, { views: [{ state: "normal", zoomScale: 85, zoomScaleNormal: 85 }] });
   const blocksDef = (matches && matches.length) ? matches : [null];
   const blocks = [];
   blocksDef.forEach((m, b) => {

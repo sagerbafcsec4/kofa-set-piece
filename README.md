@@ -97,7 +97,8 @@ Optaの「What Scored - Goals」「What Conceded - Goals」の2つのExcelを落
 | `deploy.py` / `本番へ送る.bat` | 本番（Cloudflare Pages）へ送る台本 |
 | `tests/e2e_run.py` | 一気通貫テスト（Playwright）。`python tests\e2e_run.py`。`--headed` でブラウザを表示 |
 | `tests/verify_output.py` | 出力xlsxの機械照合（openpyxl）。単独でも実行可 |
-| `tests/paths.py` | テスト用の実データの住所（日本語パスをここに集約） |
+| `tests/paths.py` | テスト用の実データの住所（`tests/fixtures/6Goals.xlsx`・`6Conceded.xlsx`。xlsx は保管庫に入れないので手元にコピーして置く） |
+| `tests/excel_measure.ps1` | Excel本体で行高・列幅・文字を実測（表示設定の抜けなど openpyxl では見えない問題用） |
 | `docs/opta-names-draft.csv` / `docs/opta-names-column.txt` | 内蔵表の写し（CSV）と、共有シートへ貼る場合用の1列テキスト（任意） |
 | `docs/superpowers/specs/` | 設計書 |
 
@@ -109,5 +110,6 @@ Optaの「What Scored - Goals」「What Conceded - Goals」の2つのExcelを落
 
 - 素のHTML＋JavaScript。Excelの読み書きは [ExcelJS](https://github.com/exceljs/exceljs) **4.4.0**（cdnjs・バージョン固定）。Python/Pyodideは使わない（起動待ちなし）。
 - ExcelJS の癖: 結合セルは `mergeCellsWithoutStyle` で結合し8セル個別に体裁を入れる／`alignment.vertical` は `'middle'`／列幅がちょうど 9 だと既定扱いで書き出されない（現在は 25/13 なので該当なし）／%は `Math.round(v*100)/10000` で丸める。
+- **Excel の癖（2026-09-18 実測・重要）**: xlsx に表示設定 `<sheetViews>` が無いと、Excel（日本語環境）は `ht="15"` と書いてある行を **0.8倍（12）** で解釈する（表題20→16.1・見出し30→24・表15→12）。ExcelJS は `views` を指定しないと `<sheetViews>` を書き出さないため、`addWorksheet(name, { views:[{ state:"normal", zoomScale:85, zoomScaleNormal:85 }] })` で必ず書き出す。openpyxl はファイルの値（15）をそのまま返すので検査では見つからない → **Excel本体での実測は `tests\excel_measure.ps1`**（`python .claude/scripts/run_powershell.py -f tests\excel_measure.ps1` でObsidianの台本経由。結果は tests/output/excel_measure_result.txt）。倍率85%は元Excelに合わせた値
 - openpyxl（検査側）の癖: 結合範囲の2番目以降は文字・塗りを持たない `MergedCell` として読まれ、外周罫線だけが合成される。検査台本はその見え方で照合している。
 - 主な関数: `parseOptaRows`（列名解決）→ `buildDictionary`（辞書）→ `localizeAndSort` → `buildWorkbook`/`writeTable`（体裁）→ `verify`（照合）→ `download`。純関数は `window.KSP` に公開しておりテストから直接叩ける。

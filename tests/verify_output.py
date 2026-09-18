@@ -283,6 +283,8 @@ def verify(out_path, dict_csv=None, league=paths.LEAGUE, matchday=paths.MATCHDAY
         rep.check(abs((ws.row_dimensions[gap].height or 0) - ROW_H["gap"]) < 0.01 and all(ws.cell(gap, off + c).value is None for c in range(1, 9)), f"{tagb}空き行", f"行{gap} 高さ {ws.row_dimensions[gap].height}")
         end2 = check_table(ws, rep, gap + 1, f"セットプレーからの失点数 (Opta) ※第{matchday}節終了時", ec, True, f"{tagb}失点表", off, hl)
     rep.check(ws.max_row == end2, "余計な行がない", f"max_row={ws.max_row} 期待={end2}")
+    # 表示設定が無いと Excel が行の高さを0.8倍で解釈する（2026-09-18 実測）→ 必ず存在し倍率85%であること
+    rep.check(ws.sheet_view is not None and ws.sheet_view.zoomScale == 85, "表示設定（倍率85%）が書き出されている", f"zoom={getattr(ws.sheet_view, 'zoomScale', None)}")
     # 数式・エラー値
     bad = []
     for row in ws.iter_rows():
