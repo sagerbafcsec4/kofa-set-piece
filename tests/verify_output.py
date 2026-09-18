@@ -40,6 +40,7 @@ OPTA_COLS = {
     "setPiecePct": "goals from set piece %",
 }
 OUT_HEADERS = ["Team", "Total", "Penalties", "Corners", "Direct\nFreekicks", "Indirect\nFreekicks", "Throw In", "Goals From\nSet Piece ％"]
+OUT_HEADERS_CONCEDED = OUT_HEADERS[:7] + ["Conceded From\nSet Piece ％"]
 COL_WIDTHS = [25, 13, 13, 13, 13, 13, 13, 20.78]
 ROW_H = {"title": 20, "head": 30, "body": 15, "gap": 30, "title2": 20}
 FONT = "MS UI Gothic"
@@ -194,7 +195,8 @@ def check_table(ws, rep, start_row, title, rows, is_second, tag, off=0, hl=None)
             bad.append(f"{cell.coordinate}:{diff}")
     rep.check(not bad, f"{tag} 表題行の体裁（先頭セル全項目＋外周罫線）", "; ".join(bad)[:300])
     # 見出し
-    rep.check([cl(r1, c).value for c in range(1, 9)] == OUT_HEADERS, f"{tag} 見出し8個", str([cl(r1, c).value for c in range(1, 9)]))
+    exp_headers = OUT_HEADERS_CONCEDED if is_second else OUT_HEADERS
+    rep.check([cl(r1, c).value for c in range(1, 9)] == exp_headers, f"{tag} 見出し8個", str([cl(r1, c).value for c in range(1, 9)]))
     rep.check(abs((ws.row_dimensions[r1].height or 0) - ROW_H["head"]) < 0.01, f"{tag} 見出しの行高", str(ws.row_dimensions[r1].height))
     bad = []
     for c in range(1, 9):

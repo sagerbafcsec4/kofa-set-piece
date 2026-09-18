@@ -253,6 +253,8 @@ const OPTA_COLS = {
 };
 // 見出し（2026-09-15 ユーザー指定）。長いものは改行文字で2行にする（見出しセルだけ「折り返し」、他は「縮小して全体を表示」）。％は全角
 const OUT_HEADERS = ["Team","Total","Penalties","Corners","Direct\nFreekicks","Indirect\nFreekicks","Throw In","Goals From\nSet Piece ％"];
+// 失点表は最後の見出しだけ「Conceded From Set Piece ％」（2026-09-18 ユーザー指定）
+const OUT_HEADERS_CONCEDED = OUT_HEADERS.slice(0, 7).concat(["Conceded From\nSet Piece ％"]);
 // 内蔵の対応表（Optaの英語名 → 日本語名）。日本語名は共有シートの「チーム名」列と同じ表記。
 // 共有シートに「Opta表記」列があればそちらを優先し、ここは土台として使う（docs/opta-names-draft.csv と同内容）。
 // 英語名は ; 区切りで複数書ける。ラ・リーガは実データで確認済み、プレミア・エールディヴィジは推定（未登録が出たら足す）。
@@ -563,7 +565,7 @@ function writeTable(ws, startRow, title, rows, isSecond, off = 0, highlight = nu
   // --- 見出し行（黒背景・白太字・上 medium・内側 thin）
   ws.getRow(r1).height = STYLE.rowH.head;
   for (let c = 1; c <= NCOL; c++) {
-    const cell = ws.getCell(r1, C(c)); cell.value = OUT_HEADERS[c - 1];
+    const cell = ws.getCell(r1, C(c)); cell.value = (isSecond ? OUT_HEADERS_CONCEDED : OUT_HEADERS)[c - 1];
     applyStyle(cell, { size: STYLE.fontHead, bold: true, color: STYLE.white, fill: STYLE.headFill, wrap: true,
       border: borderOf("medium", "thin", c === 1 ? "medium" : "thin", c === NCOL ? "medium" : "thin"),
       numFmt: c === NCOL ? "@" : null });
@@ -945,7 +947,7 @@ function renderTeamTable(){
 })();
 
 // テストから直接叩けるように純関数を公開
-window.KSP = { parseCSV, parseOptaRows, buildDictionary, localizeAndSort, buildWorkbook, verify, makeFileName, normKey, compareAllCells, importPastedMatches, teamNamesForLeague, teamTableRows, matchList, LEAGUE_OPTIONS, STYLE, OUT_HEADERS, BUILTIN_DICT, PALETTE };
+window.KSP = { parseCSV, parseOptaRows, buildDictionary, localizeAndSort, buildWorkbook, verify, makeFileName, normKey, compareAllCells, importPastedMatches, teamNamesForLeague, teamTableRows, matchList, LEAGUE_OPTIONS, STYLE, OUT_HEADERS, OUT_HEADERS_CONCEDED, BUILTIN_DICT, PALETTE };
 </script>
 </body>
 </html>

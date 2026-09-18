@@ -67,7 +67,7 @@ Optaの「What Scored - Goals」「What Conceded - Goals」の2つのExcelを落
 | シート名 | `{節}節用セットプレー` |
 | 表題 | `セットプレーからの得点数 (Opta) ※第{節}節終了時`／`…失点数…`。「暫定」にチェックを入れると表題は `※第{節}節終了時暫定`、ファイル名は `…{シーズン}第{節}節暫定.xlsx`（シート名は変わらない。2026-09-15追加） |
 | 配置 | 得点表: 1行目 表題（A:H結合）／2行目 見出し／3行目〜 本文。1行空けて失点表（20クラブなら 24〜45行目） |
-| 見出し | Team / Total / Penalties / Corners / Direct Freekicks / Indirect Freekicks / Throw In / Goals From Set Piece ％（長いものは2行・％は全角。2026-09-15変更） |
+| 見出し | Team / Total / Penalties / Corners / Direct Freekicks / Indirect Freekicks / Throw In / Goals From Set Piece ％（長いものは2行・％は全角。2026-09-15変更）。失点表の最後だけ **Conceded From Set Piece ％**（2026-09-18） |
 | 列の対応 | Total←Goals From Set Piece、Penalty←…Penalties、Corners←…Corner、Dir.←…Direct Freekicks、Ind.←…Indirect Freekicks、Throws←…Throw In、％←…Set Piece % の値そのまま（42.86 のように。表示形式 `0.00"％"` で全角％を付ける。2026-09-15変更・旧は÷100して 0.00%） |
 | 並び | セットプレー得点（失点）の降順 → 同点は Opta ファイルの並び（Rk順）をそのまま（2026-09-15変更。旧: Optaの Total 降順 → 日本語名の昇順） |
 | 体裁 | 全セル MS UI Gothic・中央揃え・「縮小して全体を表示」（見出し行だけ「折り返し」＝2行表示）。表題: 薄灰 `E7E6E6`・黒太字12pt・四方太線。見出し: 黒背景・白太字。本文: 外周太線・内側細線。％列は `0.00"％"`（値は Opta の100倍値そのまま）。文字サイズ 表題12／見出し11／表13（全列同じ）。行の高さ 表題20／見出し30／表15／空き行30。列幅 A=25・B〜G=13・H=20.78（2026-09-15 第6節の元Excel「ラ・リーガ_セットプレー情報_2026-27_第5節.xlsx」に合わせた。初版はテンプレ実測値 Meiryo UI／21.7…） |
