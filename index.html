@@ -8,8 +8,8 @@
 <title>セットプレーExcel作成</title>
 <style>
   :root{
-    --bg:#fbf7f2; --ink:#0f172a; --muted:#64748b; --line:#e4e9ee; --card:#fff;
-    --p1:#ea580c; --p2:#f59e0b; --grad:linear-gradient(135deg,#ea580c 0%,#f59e0b 100%);
+    --bg:#fbf7f2; --ink:#0f172a; --muted:#475569; --line:#e4e9ee; --card:#fff;
+    --p1:#ea580c; --p1t:#c2410c; --p2:#f59e0b; --grad:linear-gradient(135deg,#ea580c 0%,#f59e0b 100%);
     --ring:rgba(234,88,12,.16); --dash:#f6c9a6; --soft:#fff3e8; --ok:#16a34a; --warn:#b91c1c;
     --font:Inter,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,system-ui,sans-serif;
   }
@@ -40,8 +40,8 @@
   .rm:hover{ background:#fbd2b3; }
   button{ font:inherit; border:0; border-radius:9px; padding:11px 22px; cursor:pointer; }
   button.primary{ background:var(--grad); color:#fff; font-weight:700; box-shadow:0 6px 16px -6px var(--ring); }
-  button.primary:disabled{ background:#d9cfc4; box-shadow:none; cursor:not-allowed; }
-  button.small{ background:#fff; color:var(--p1); border:1px solid var(--dash); padding:5px 12px; font-size:.82rem; font-weight:600; border-radius:8px; }
+  button.primary:disabled{ background:#d9cfc4; color:#57534e; box-shadow:none; cursor:not-allowed; }
+  button.small{ background:#fff; color:var(--p1t); border:1px solid var(--dash); padding:5px 12px; font-size:.82rem; font-weight:600; border-radius:8px; }
   button.small:hover{ background:var(--soft); }
   #status{ font-size:.88rem; color:var(--muted); margin-top:10px; }
   .alert{ display:none; border-radius:10px; padding:12px 14px; margin:0 0 12px; font-size:.9rem; line-height:1.75; }
@@ -49,14 +49,14 @@
   .alert b{ color:#7f1414; }
   .setblock{ border:1px solid var(--line); border-radius:14px; padding:16px 18px 18px; margin-bottom:14px; background:#fffcf9; }
   .setblock:last-child{ margin-bottom:0; }
-  .setblock-title{ display:flex; align-items:center; gap:9px; font-weight:800; font-size:.92rem; color:var(--p1); margin:0 0 14px; padding-bottom:10px; border-bottom:1px solid var(--line); }
+  .setblock-title{ display:flex; align-items:center; gap:9px; font-weight:800; font-size:.92rem; color:var(--p1t); margin:0 0 14px; padding-bottom:10px; border-bottom:1px solid var(--line); }
   .setblock-title .dot{ width:9px; height:9px; border-radius:50%; background:var(--grad); flex:0 0 auto; }
   .grid3{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
   @media (max-width:640px){ .grid3{ grid-template-columns:1fr; } }
   .field label{ display:block; font-weight:700; font-size:.88rem; margin:0 0 5px; }
   .labelrow{ display:flex; justify-content:space-between; align-items:center; margin:0 0 5px; }
   .labelrow label{ margin:0; }
-  .labelrow .prov{ display:inline-flex; align-items:center; gap:5px; font-weight:700; font-size:.88rem; color:var(--p1); background:var(--soft); border:1px solid var(--dash); border-radius:8px; padding:2px 10px 2px 7px; cursor:pointer; }
+  .labelrow .prov{ display:inline-flex; align-items:center; gap:5px; font-weight:700; font-size:.88rem; color:var(--p1t); background:var(--soft); border:1px solid var(--dash); border-radius:8px; padding:2px 10px 2px 7px; cursor:pointer; }
   .labelrow .prov input{ width:15px; height:15px; accent-color:var(--p1); margin:0; }
   .hint{ font-size:.8rem; color:var(--muted); margin:4px 0 0; }
   .dateinput{ font:inherit; font-size:14px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); accent-color:var(--p1); width:100%; }
