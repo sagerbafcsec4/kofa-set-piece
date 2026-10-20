@@ -268,6 +268,7 @@ const LEAGUE_OPTIONS = [
   { label: "プレミアリーグ",   teams: 20 },
   { label: "ラ・リーガ",       teams: 20 },
   { label: "エールディヴィジ", teams: 18 },
+  { label: "WSL",              teams: 14 },
 ];
 const CUSTOM_VAL = "__custom__";
 // 出力キー → Optaのヘッダ（小文字化・空白圧縮して照合する）
@@ -314,6 +315,18 @@ const BUILTIN_DICT = {
     ["フォルトゥナ・シッタート", "Fortuna Sittard"], ["スパルタ・ロッテルダム", "Sparta Rotterdam"], ["フローニンゲン", "FC Groningen;Groningen"],
     ["エクセルシオール", "Excelsior"], ["テルスター", "Telstar"], ["ADOデン・ハーグ", "ADO Den Haag"], ["カンブール", "SC Cambuur;Cambuur"],
     ["ヴィレムⅡ", "Willem II"],
+  ],
+  // WSL（女子スーパーリーグ・2026-10-21追加）。Optaの英語名は未確認のため「Women」付き・無しの両方を登録
+  "WSL": [
+    ["マンチェスター・シティ", "Manchester City;Manchester City Women;Manchester City WFC"], ["アーセナル", "Arsenal;Arsenal Women;Arsenal WFC"],
+    ["チェルシー", "Chelsea;Chelsea Women;Chelsea FC Women;Chelsea WFC"], ["マンチェスター・ユナイテッド", "Manchester United;Manchester United Women;Manchester United WFC"],
+    ["トッテナム・ホットスパー", "Tottenham Hotspur;Tottenham;Tottenham Hotspur Women;Tottenham Women"],
+    ["ロンドン・シティ・ライオネセズ", "London City Lionesses;London City"],
+    ["ブライトン", "Brighton & Hove Albion;Brighton and Hove Albion;Brighton;Brighton & Hove Albion Women;Brighton Women"],
+    ["エヴァートン", "Everton;Everton Women"], ["アストン・ヴィラ", "Aston Villa;Aston Villa Women"],
+    ["ウェストハム", "West Ham United;West Ham;West Ham United Women;West Ham Women"], ["リヴァプール", "Liverpool;Liverpool Women;Liverpool FC Women"],
+    ["バーミンガム", "Birmingham City;Birmingham;Birmingham City Women;Birmingham Women"],
+    ["クリスタル・パレス", "Crystal Palace;Crystal Palace Women"], ["チャールトン", "Charlton Athletic;Charlton;Charlton Athletic Women;Charlton Women"],
   ],
 };
 // 体裁（前回の完成品 K〜R 列を openpyxl で実測した値）
