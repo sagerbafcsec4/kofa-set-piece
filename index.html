@@ -387,11 +387,23 @@ async function readOptaWorkbook(file){
 function findOptaSheet(wb){
   return wb.getWorksheet("Sheet") || wb.worksheets[0];
 }
+// Opta が見出しの表記を変えた列の別名（新しい表記 → OPTA_COLS の表記）。2026-10-22: Indirect Freekicks → Freekick Play に改名された
+const OPTA_HEADER_ALIASES = {
+  "goals from freekick play": "goals from indirect freekicks",
+};
+// 1行目の見出し → 列番号の対応表（別名は OPTA_COLS の表記でも引けるようにする）
+function optaHeaderMap(ws){
+  const colMap = {};
+  ws.getRow(1).eachCell({ includeEmpty: false }, (c, col) => { const k = normHeader(cellText(c)); if (k && !(k in colMap)) colMap[k] = col; });
+  for (const [alias, canon] of Object.entries(OPTA_HEADER_ALIASES)) {
+    if (alias in colMap && !(canon in colMap)) colMap[canon] = colMap[alias];
+  }
+  return colMap;
+}
 // ヘッダ行から列位置を名前で解決し、行ごとのオブジェクト配列にする
 function parseOptaRows(ws){
   if (!ws) throw new AppError("シートが見つかりません");
-  const colMap = {};
-  ws.getRow(1).eachCell({ includeEmpty: false }, (c, col) => { const k = normHeader(cellText(c)); if (k && !(k in colMap)) colMap[k] = col; });
+  const colMap = optaHeaderMap(ws);
   const idx = {};
   const missing = [];
   for (const [key, header] of Object.entries(OPTA_COLS)) {
@@ -418,8 +430,7 @@ function parseOptaRows(ws){
 }
 // 全セル照合用: 元シートを parseOptaRows とは別経路で読み直し、Team Name → 各列の生の値 を返す
 function readOptaMatrix(ws){
-  const col = {};
-  ws.getRow(1).eachCell({ includeEmpty: false }, (c, i) => { const k = normHeader(cellText(c)); if (k && !(k in col)) col[k] = i; });
+  const col = optaHeaderMap(ws);
   const out = new Map();
   for (let r = 2; r <= ws.rowCount; r++) {
     const row = ws.getRow(r);
