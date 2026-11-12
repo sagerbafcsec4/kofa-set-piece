@@ -206,8 +206,8 @@
           <button class="small" id="clearMatches">すべて消す</button>
           <span class="hint" id="matchProblem" style="margin:0; color:var(--warn)"></span>
         </div>
-        <div class="setq" style="margin-top:14px;">まとめて貼り付け（1行に1試合。「ホーム アウェイ」を空白・タブ・vs・- のどれかで区切る）</div>
-        <textarea id="pasteMatches" class="dateinput" rows="4" placeholder="例:&#10;アラベス バレンシア&#10;レアル・マドリー vs エルチェ&#10;バルセロナ - ラシン・サンタンデール"></textarea>
+        <div class="setq" style="margin-top:14px;">まとめて貼り付け（1行に1試合。「ホーム アウェイ」を空白・タブ・vs・-・対 のどれかで区切る）</div>
+        <textarea id="pasteMatches" class="dateinput" rows="4" placeholder="例:&#10;アラベス バレンシア&#10;レアル・マドリー vs エルチェ&#10;バルセロナ - ラシン・サンタンデール&#10;アストン・ヴィラ対サンダーランド"></textarea>
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:6px;">
           <button class="small" id="importMatches">貼り付けた内容を取り込む</button>
           <span class="hint" id="pasteResult" style="margin:0"></span>
@@ -803,7 +803,7 @@ function importPastedMatches(text){
   let added = 0; const miss = [];
   for (const line of String(text || "").split(/\r?\n/)) {
     const t = line.trim(); if (!t) continue;
-    const parts = t.split(/\s*(?:\bvs\.?\b|\bv\b|[-－–—:：、,\t]|　|\s)\s*/i).map(x => x.trim()).filter(Boolean);
+    const parts = t.split(/\s*(?:\bvs\.?\b|\bv\b|[-－–—:：、,\t対]|　|\s)\s*/i).map(x => x.trim()).filter(Boolean);
     if (parts.length < 2) { miss.push(t); continue; }
     const h = found.get(parts[0]) || "", a = found.get(parts[parts.length - 1]) || "";
     if (!h) miss.push(parts[0]); if (!a) miss.push(parts[parts.length - 1]);
