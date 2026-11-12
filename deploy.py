@@ -42,7 +42,9 @@ def say(mark, msg):
 
 def run(cmd, shell=False):
     """コマンドを実行して (終了コード, 出力) を返す。"""
-    p = subprocess.run(cmd, shell=shell, cwd=BASE, capture_output=True)
+    # stdin を空にする: 画面に出ない確認待ちで止まり続けるのを防ぐ（2026-11-12 ⑤で無言停止）
+    p = subprocess.run(cmd, shell=shell, cwd=BASE, capture_output=True,
+                       stdin=subprocess.DEVNULL)
     out = (p.stdout + p.stderr).decode("utf-8", errors="replace").strip()
     return p.returncode, out
 
@@ -149,7 +151,8 @@ def main():
         say("⑤", "ここで本番へ送ります（確認だけの実行なので送りません）")
         shutil.rmtree(tmp, ignore_errors=True)
         return 0
-    cmd = ('npx wrangler pages deploy "%s" --project-name=%s '
+    # --yes: 送信道具の新しい版が出ていても「入れてよいか」の確認で止まらない
+    cmd = ('npx --yes wrangler pages deploy "%s" --project-name=%s '
            "--branch=main --commit-dirty=true" % (tmp, project))
     say("⑤", "本番へ送っています…（初回は少し時間がかかります）")
     code, out = run(cmd, shell=True)
